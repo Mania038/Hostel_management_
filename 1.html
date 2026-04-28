@@ -1,0 +1,1914 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UniNest — Hostel Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-primary: #050810;
+    --bg-secondary: #d1d4dc;
+    --bg-card: rgba(255,255,255,0.04);
+    --bg-card-hover: rgba(255,255,255,0.07);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-border-active: rgba(99,179,237,0.4);
+    --neon-blue: #63b3ed;
+    --neon-cyan: #76e4f7;
+    --neon-purple: #b794f4;
+    --neon-pink: #f687b3;
+    --neon-green: #68d391;
+    --accent-gradient: linear-gradient(135deg, #63b3ed, #b794f4);
+    --accent-gradient-2: linear-gradient(135deg, #76e4f7, #63b3ed);
+    --text-primary: #f0f4ff;
+    --text-secondary: #8896b3;
+    --text-muted: #4a5568;
+    --danger: #fc8181;
+    --success: #68d391;
+    --warning: #f6e05e;
+    --font-display: 'Syne', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+    --shadow-neon: 0 0 30px rgba(99,179,237,0.15);
+    --shadow-card: 0 8px 32px rgba(0,0,0,0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: rgba(99,179,237,0.3); border-radius: 3px; }
+
+  /* BACKGROUND MESH */
+  .bg-mesh {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 10%, rgba(177, 184, 189, 0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 40% at 80% 80%, rgba(195, 193, 200, 0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 40% at 60% 30%, rgba(84, 129, 137, 0.04) 0%, transparent 50%);
+  }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100vh; position: relative; z-index: 1; }
+  .screen.active { display: block; animation: fadeInScreen 0.4s ease; }
+  @keyframes fadeInScreen {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== NAVBAR ===== */
+  .navbar {
+    position: sticky; top: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 2rem; height: 64px;
+    background: rgba(5,8,16,0.85);
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .nav-logo {
+    font-family: var(--font-display);
+    font-size: 1.3rem; font-weight: 800;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.02em;
+    cursor: pointer;
+  }
+  .nav-links { display: flex; gap: 0.25rem; align-items: center; }
+  .nav-link {
+    padding: 0.45rem 1rem;
+    font-size: 0.875rem; font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer; border-radius: var(--radius-sm);
+    transition: all 0.2s ease;
+    border: none; background: none;
+  }
+  .nav-link:hover, .nav-link.active { color: var(--neon-blue); background: rgba(99,179,237,0.08); }
+  .nav-btn {
+    padding: 0.45rem 1.2rem;
+    background: var(--accent-gradient);
+    color: #fff; border: none; cursor: pointer;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem; font-weight: 600;
+    font-family: var(--font-body);
+    transition: all 0.2s ease;
+  }
+  .nav-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,179,237,0.35); }
+
+  /* ===== GLASS CARD ===== */
+  .glass-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    transition: all 0.3s ease;
+  }
+  .glass-card:hover { background: var(--bg-card-hover); border-color: rgba(99,179,237,0.2); }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.65rem 1.4rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.875rem; font-weight: 600;
+    font-family: var(--font-body);
+    cursor: pointer; border: none;
+    transition: all 0.2s ease;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #4299e1, #9f7aea);
+    color: #fff;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 24px rgba(99,179,237,0.4); }
+  .btn-secondary {
+    background: rgba(99,179,237,0.1);
+    color: var(--neon-blue);
+    border: 1px solid rgba(99,179,237,0.25);
+  }
+  .btn-secondary:hover { background: rgba(99,179,237,0.18); transform: translateY(-1px); }
+  .btn-danger {
+    background: rgba(252,129,129,0.1);
+    color: var(--danger);
+    border: 1px solid rgba(252,129,129,0.25);
+  }
+  .btn-danger:hover { background: rgba(252,129,129,0.2); }
+  .btn-success {
+    background: rgba(104,211,145,0.1);
+    color: var(--success);
+    border: 1px solid rgba(104,211,145,0.25);
+  }
+  .btn-success:hover { background: rgba(104,211,145,0.2); }
+  .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.8rem; }
+  .btn-lg { padding: 0.85rem 2rem; font-size: 1rem; }
+
+  /* ===== FORM ELEMENTS ===== */
+  .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
+  .form-label {
+    font-size: 0.8rem; font-weight: 600;
+    color: var(--text-secondary); letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .form-input {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    padding: 0.7rem 1rem;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.2s ease;
+    width: 100%;
+  }
+  .form-input:focus {
+    border-color: var(--neon-blue);
+    background: rgba(99,179,237,0.05);
+    box-shadow: 0 0 0 3px rgba(99,179,237,0.1);
+  }
+  .form-input option { background: #0d1117; }
+  select.form-input { cursor: pointer; }
+  textarea.form-input { resize: vertical; min-height: 90px; }
+
+  /* ===== BADGE / STATUS ===== */
+  .badge {
+    display: inline-flex; align-items: center; gap: 0.35rem;
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    font-size: 0.75rem; font-weight: 600;
+    font-family: var(--font-mono);
+    letter-spacing: 0.03em;
+  }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; }
+  .badge-pending { background: rgba(246,224,94,0.12); color: var(--warning); border: 1px solid rgba(246,224,94,0.25); }
+  .badge-pending::before { background: var(--warning); }
+  .badge-approved { background: rgba(104,211,145,0.12); color: var(--success); border: 1px solid rgba(104,211,145,0.25); }
+  .badge-approved::before { background: var(--success); }
+  .badge-rejected { background: rgba(252,129,129,0.12); color: var(--danger); border: 1px solid rgba(252,129,129,0.25); }
+  .badge-rejected::before { background: var(--danger); }
+  .badge-paid { background: rgba(104,211,145,0.12); color: var(--success); border: 1px solid rgba(104,211,145,0.25); }
+  .badge-paid::before { background: var(--success); }
+  .badge-unpaid { background: rgba(252,129,129,0.12); color: var(--danger); border: 1px solid rgba(252,129,129,0.25); }
+  .badge-unpaid::before { background: var(--danger); }
+  .badge-available { background: rgba(118,228,247,0.12); color: var(--neon-cyan); border: 1px solid rgba(118,228,247,0.25); }
+  .badge-available::before { background: var(--neon-cyan); }
+  .badge-full { background: rgba(252,129,129,0.12); color: var(--danger); border: 1px solid rgba(252,129,129,0.25); }
+  .badge-full::before { background: var(--danger); }
+  .badge-open { background: rgba(246,224,94,0.12); color: var(--warning); border: 1px solid rgba(246,224,94,0.25); }
+  .badge-open::before { background: var(--warning); }
+  .badge-resolved { background: rgba(104,211,145,0.12); color: var(--success); border: 1px solid rgba(104,211,145,0.25); }
+  .badge-resolved::before { background: var(--success); }
+
+  /* ===== STAT CARD ===== */
+  .stat-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: 1.4rem 1.6rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+    position: relative; overflow: hidden;
+    transition: all 0.3s ease;
+  }
+  .stat-card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.blue::before { background: linear-gradient(90deg, var(--neon-blue), transparent); }
+  .stat-card.purple::before { background: linear-gradient(90deg, var(--neon-purple), transparent); }
+  .stat-card.cyan::before { background: linear-gradient(90deg, var(--neon-cyan), transparent); }
+  .stat-card.green::before { background: linear-gradient(90deg, var(--neon-green), transparent); }
+  .stat-card.pink::before { background: linear-gradient(90deg, var(--neon-pink), transparent); }
+  .stat-card:hover { transform: translateY(-3px); border-color: rgba(99,179,237,0.2); }
+  .stat-icon {
+    width: 40px; height: 40px; border-radius: var(--radius-sm);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 0.25rem;
+  }
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2rem; font-weight: 700;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+  }
+  .stat-label { font-size: 0.8rem; color: var(--text-secondary); font-weight: 500; }
+  .stat-change { font-size: 0.75rem; color: var(--success); font-weight: 500; }
+
+  /* ===== TABLE ===== */
+  .data-table { width: 100%; border-collapse: collapse; }
+  .data-table thead tr {
+    border-bottom: 1px solid var(--glass-border);
+  }
+  .data-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-size: 0.75rem; font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+    font-family: var(--font-mono);
+  }
+  .data-table td {
+    padding: 0.85rem 1rem;
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+  .data-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+  .data-table tbody tr:last-child td { border-bottom: none; }
+
+  /* ===== SIDEBAR ===== */
+  .dashboard-layout {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 100vh;
+  }
+  .sidebar {
+    background: rgba(9,13,26,0.95);
+    border-right: 1px solid var(--glass-border);
+    padding: 1.5rem 1rem;
+    display: flex; flex-direction: column; gap: 0.25rem;
+    position: sticky; top: 0; height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar-section {
+    font-size: 0.7rem; font-weight: 700;
+    color: var(--text-muted); text-transform: uppercase;
+    letter-spacing: 0.1em; font-family: var(--font-mono);
+    padding: 0.75rem 0.75rem 0.35rem;
+    margin-top: 0.5rem;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 0.875rem; font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+    border: none; background: none; width: 100%; text-align: left;
+  }
+  .sidebar-item:hover { color: var(--text-primary); background: rgba(255,255,255,0.05); }
+  .sidebar-item.active { color: var(--neon-blue); background: rgba(99,179,237,0.1); }
+  .sidebar-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+  .dashboard-main { padding: 2rem; overflow-y: auto; }
+  .page-title {
+    font-family: var(--font-display);
+    font-size: 1.6rem; font-weight: 700;
+    margin-bottom: 0.25rem;
+  }
+  .page-subtitle { font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.75rem; }
+
+  /* ===== GRIDS ===== */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.25rem; }
+  .grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; }
+
+  /* ===== SECTION HEADER ===== */
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 1rem; font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  /* ===== TABLE WRAPPER ===== */
+  .table-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .table-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--glass-border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+
+  /* ===== PROGRESS BAR ===== */
+  .progress-bar {
+    height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden; margin-top: 0.5rem;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    background: var(--accent-gradient);
+    transition: width 0.6s ease;
+  }
+
+  /* ===== AVATAR ===== */
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--accent-gradient);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; color: #fff;
+    flex-shrink: 0;
+  }
+
+  /* ===== TOAST ===== */
+  #toast {
+    position: fixed; bottom: 2rem; right: 2rem; z-index: 9999;
+    background: rgba(9,13,26,0.95);
+    border: 1px solid var(--glass-border);
+    border-left: 3px solid var(--neon-blue);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.25rem;
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+    display: flex; align-items: center; gap: 0.75rem;
+    font-size: 0.875rem;
+    transform: translateX(120%); transition: transform 0.3s ease;
+    max-width: 320px;
+  }
+  #toast.show { transform: translateX(0); }
+  #toast.success { border-left-color: var(--success); }
+  #toast.error { border-left-color: var(--danger); }
+
+  /* ===== MODAL ===== */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: rgba(5,8,16,0.8); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: #0d1117;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 2rem; width: 100%; max-width: 480px;
+    animation: modalIn 0.3s ease;
+    max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.95) translateY(-10px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-title {
+    font-family: var(--font-display);
+    font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem; border-bottom: 1px solid var(--glass-border);
+  }
+  .modal-footer { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+
+  /* ===== TAG ===== */
+  .tag {
+    display: inline-block; padding: 0.2rem 0.6rem;
+    border-radius: 20px; font-size: 0.75rem; font-weight: 500;
+  }
+  .tag-blue { background: rgba(99,179,237,0.12); color: var(--neon-blue); }
+  .tag-purple { background: rgba(183,148,244,0.12); color: var(--neon-purple); }
+  .tag-cyan { background: rgba(118,228,247,0.12); color: var(--neon-cyan); }
+
+  /* === MISC === */
+  .divider { height: 1px; background: var(--glass-border); margin: 1rem 0; }
+  .text-gradient {
+    background: var(--accent-gradient);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .sub-tabs { display: flex; gap: 0.25rem; margin-bottom: 1.25rem; }
+  .sub-tab {
+    padding: 0.45rem 1rem; border-radius: var(--radius-sm);
+    font-size: 0.825rem; font-weight: 500;
+    cursor: pointer; border: none; background: transparent;
+    color: var(--text-secondary); font-family: var(--font-body);
+    transition: all 0.2s;
+  }
+  .sub-tab.active { background: rgba(99,179,237,0.1); color: var(--neon-blue); }
+  .sub-tab:hover { color: var(--text-primary); }
+
+  /* ===== ROOM CARD ===== */
+  .room-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden; transition: all 0.3s ease;
+    cursor: pointer;
+  }
+  .room-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.4); border-color: rgba(99,179,237,0.25); }
+  .room-card-img {
+    height: 130px;
+    background: linear-gradient(135deg, rgba(99,179,237,0.15), rgba(183,148,244,0.15));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; position: relative;
+  }
+  .room-card-img .type-badge {
+    position: absolute; top: 0.75rem; right: 0.75rem;
+  }
+  .room-card-body { padding: 1rem 1.1rem 1.1rem; }
+  .room-number {
+    font-family: var(--font-display);
+    font-size: 1rem; font-weight: 700; margin-bottom: 0.35rem;
+  }
+  .room-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.5rem; }
+  .seat-indicator {
+    display: flex; gap: 0.3rem; margin-top: 0.6rem;
+  }
+  .seat-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1px solid var(--glass-border);
+  }
+  .seat-dot.taken { background: rgba(252,129,129,0.7); border-color: rgba(252,129,129,0.4); }
+  .seat-dot.open { background: rgba(104,211,145,0.7); border-color: rgba(104,211,145,0.4); }
+
+  /* === HERO === */
+  .hero {
+    min-height: calc(100vh - 64px);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; text-align: center;
+    padding: 2rem; gap: 1.5rem; position: relative;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.35rem 1rem; border-radius: 20px;
+    background: rgba(99,179,237,0.1); border: 1px solid rgba(99,179,237,0.25);
+    font-size: 0.8rem; font-weight: 600; color: var(--neon-blue);
+    font-family: var(--font-mono);
+  }
+  .hero-title {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 800; line-height: 1.05;
+    letter-spacing: -0.03em;
+    max-width: 700px;
+  }
+  .hero-sub {
+    font-size: 1.1rem; color: var(--text-secondary);
+    max-width: 540px; line-height: 1.65;
+  }
+  .hero-actions { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; margin-top: 0.5rem; }
+  .hero-stats {
+    display: flex; gap: 2.5rem; flex-wrap: wrap; justify-content: center;
+    padding: 1.5rem 2.5rem;
+    border-radius: var(--radius-xl);
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    margin-top: 1rem;
+  }
+  .hero-stat-item { text-align: center; }
+  .hero-stat-val {
+    font-family: var(--font-display);
+    font-size: 1.8rem; font-weight: 800;
+  }
+  .hero-stat-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+  /* Floating orbs */
+  .orb {
+    position: absolute; border-radius: 50%; filter: blur(80px); pointer-events: none;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+  .orb-1 { width: 300px; height: 300px; background: rgba(99,179,237,0.06); top: 10%; left: 10%; animation-delay: 0s; }
+  .orb-2 { width: 250px; height: 250px; background: rgba(183,148,244,0.07); bottom: 15%; right: 10%; animation-delay: 3s; }
+  .orb-3 { width: 200px; height: 200px; background: rgba(118,228,247,0.05); top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: 6s; }
+  @keyframes orbFloat {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-25px) scale(1.05); }
+  }
+
+  /* ===== AUTH SCREEN ===== */
+  .auth-container {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: 2rem; position: relative;
+  }
+  .auth-card {
+    width: 100%; max-width: 440px;
+    background: rgba(9,13,26,0.9);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+  .auth-logo {
+    text-align: center; margin-bottom: 1.75rem;
+  }
+  .auth-logo-text {
+    font-family: var(--font-display);
+    font-size: 1.6rem; font-weight: 800;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .auth-tabs { display: flex; gap: 0; margin-bottom: 1.75rem; border-radius: var(--radius-sm); overflow: hidden; background: rgba(255,255,255,0.04); padding: 3px; }
+  .auth-tab {
+    flex: 1; padding: 0.55rem; font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; border: none; background: transparent;
+    color: var(--text-secondary); font-family: var(--font-body);
+    border-radius: calc(var(--radius-sm) - 2px); transition: all 0.2s;
+  }
+  .auth-tab.active { background: rgba(99,179,237,0.15); color: var(--neon-blue); }
+  .auth-form { display: flex; flex-direction: column; gap: 1rem; }
+  .auth-switch { text-align: center; margin-top: 1.25rem; font-size: 0.825rem; color: var(--text-secondary); }
+  .auth-switch a { color: var(--neon-blue); cursor: pointer; text-decoration: none; }
+  .auth-switch a:hover { text-decoration: underline; }
+  .register-form { display: none; flex-direction: column; gap: 1rem; }
+
+  /* ===== FEATURE SECTION ===== */
+  .features-section { padding: 5rem 2rem; max-width: 1100px; margin: 0 auto; }
+  .section-heading {
+    font-family: var(--font-display);
+    font-size: 2rem; font-weight: 800; text-align: center;
+    margin-bottom: 0.5rem;
+  }
+  .section-heading-sub {
+    text-align: center; color: var(--text-secondary);
+    margin-bottom: 3rem; font-size: 1rem;
+  }
+  .feature-card {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg); padding: 1.5rem;
+    transition: all 0.3s ease;
+  }
+  .feature-card:hover { transform: translateY(-5px); border-color: rgba(99,179,237,0.25); }
+  .feature-icon {
+    width: 48px; height: 48px; border-radius: var(--radius-md);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem; margin-bottom: 1rem;
+  }
+  .feature-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+  .feature-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+
+  /* ===== NOTICE / INFO BOX ===== */
+  .info-box {
+    background: rgba(99,179,237,0.07);
+    border: 1px solid rgba(99,179,237,0.2);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+    font-size: 0.85rem; color: var(--neon-blue); line-height: 1.55;
+  }
+  .warning-box {
+    background: rgba(246,224,94,0.07);
+    border: 1px solid rgba(246,224,94,0.2);
+    border-radius: var(--radius-md);
+    padding: 0.9rem 1.1rem;
+    font-size: 0.85rem; color: var(--warning); line-height: 1.55;
+  }
+
+  /* ===== CHART BAR ===== */
+  .mini-chart { display: flex; align-items: flex-end; gap: 6px; height: 60px; }
+  .mini-bar {
+    flex: 1; border-radius: 3px 3px 0 0;
+    background: rgba(99,179,237,0.3);
+    transition: height 0.5s ease;
+    position: relative;
+  }
+  .mini-bar:hover { background: rgba(99,179,237,0.6); }
+  .mini-bar.highlight { background: linear-gradient(180deg, #63b3ed, rgba(99,179,237,0.4)); }
+
+  /* ===== COMPLAINT FORM ===== */
+  .complaint-item {
+    background: var(--bg-card); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md); padding: 1rem 1.1rem;
+    display: flex; gap: 0.75rem;
+    transition: border-color 0.2s;
+  }
+  .complaint-item:hover { border-color: rgba(99,179,237,0.2); }
+
+  /* ===== SIDEBAR USER ===== */
+  .sidebar-user {
+    margin-top: auto; padding: 0.75rem; margin-top: 1rem;
+    background: rgba(255,255,255,0.03); border-radius: var(--radius-md);
+    display: flex; align-items: center; gap: 0.6rem;
+  }
+  .sidebar-user-info { flex: 1; min-width: 0; }
+  .sidebar-user-name { font-size: 0.8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sidebar-user-role { font-size: 0.7rem; color: var(--text-secondary); font-family: var(--font-mono); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 900px) {
+    .grid-4 { grid-template-columns: repeat(2,1fr); }
+    .grid-3 { grid-template-columns: repeat(2,1fr); }
+    .grid-2-1 { grid-template-columns: 1fr; }
+    .dashboard-layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+  @media (max-width: 600px) {
+    .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-mesh"></div>
+
+<!-- ============================
+     SCREEN 1: HOME PAGE
+     ============================ -->
+<div class="screen active" id="screen-home">
+  <nav class="navbar">
+    <div class="nav-logo" onclick="showScreen('screen-home')">UniNest</div>
+    <div class="nav-links">
+      <button class="nav-link active" onclick="showScreen('screen-home')">Home</button>
+      <button class="nav-link" onclick="showScreen('screen-rooms')">Rooms</button>
+      <button class="nav-link" onclick="showScreen('screen-auth')">Login</button>
+      <button class="nav-btn" onclick="showScreen('screen-auth')">Apply Now</button>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="hero-badge">🏠 University Hostel Management System</div>
+    <h1 class="hero-title">
+      Your Home Away<br>
+      <span class="text-gradient">From Home.</span>
+    </h1>
+    <p class="hero-sub">
+      Seamlessly apply for hostel rooms, track your application, manage payments, and resolve complaints — all from one unified platform.
+    </p>
+    <div class="hero-actions">
+      <button class="btn btn-primary btn-lg" onclick="showScreen('screen-auth')">🚀 Get Started</button>
+      <button class="btn btn-secondary btn-lg" onclick="showScreen('screen-rooms')">🏠 Browse Rooms</button>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat-item">
+        <div class="hero-stat-val text-gradient">248</div>
+        <div class="hero-stat-label">Total Rooms</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-val text-gradient">1,240</div>
+        <div class="hero-stat-label">Total Seats</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-val text-gradient">312</div>
+        <div class="hero-stat-label">Available Now</div>
+      </div>
+      <div class="hero-stat-item">
+        <div class="hero-stat-val text-gradient">928</div>
+        <div class="hero-stat-label">Students Housed</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="features-section">
+    <h2 class="section-heading">Everything You Need</h2>
+    <p class="section-heading-sub">A complete hostel management experience built for students and administrators</p>
+    <div class="grid-3">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(99,179,237,0.12);">🏠</div>
+        <div class="feature-title">Room Browsing</div>
+        <div class="feature-desc">View all available rooms with real-time seat availability, amenities, and pricing details.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(183,148,244,0.12);">📋</div>
+        <div class="feature-title">Easy Application</div>
+        <div class="feature-desc">Apply for your preferred room online with a simple, step-by-step application process.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(118,228,247,0.12);">📊</div>
+        <div class="feature-title">Live Status Tracking</div>
+        <div class="feature-desc">Track your application status in real-time, from pending review to approved allocation.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(104,211,145,0.12);">💳</div>
+        <div class="feature-title">Payment Management</div>
+        <div class="feature-desc">View, track and pay hostel fees directly through the platform with full history.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(246,224,94,0.12);">🔔</div>
+        <div class="feature-title">Complaint System</div>
+        <div class="feature-desc">Submit maintenance requests and complaints, and get notified when they're resolved.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(246,135,179,0.12);">🛡️</div>
+        <div class="feature-title">Admin Control</div>
+        <div class="feature-desc">Full administrative dashboard to manage rooms, students, allocations, and reports.</div>
+      </div>
+    </div>
+  </section>
+
+  <footer style="text-align:center;padding:2rem;border-top:1px solid var(--glass-border);color:var(--text-muted);font-size:0.8rem;font-family:var(--font-mono);">
+    UniNest HMS v2.0 · Built with PHP + MySQL (XAMPP) · University Project
+  </footer>
+</div>
+
+<!-- ============================
+     SCREEN 2: AUTH (LOGIN + REGISTER)
+     ============================ -->
+<div class="screen" id="screen-auth">
+  <div class="auth-container">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="auth-card">
+      <div class="auth-logo">
+        <div class="auth-logo-text">UniNest</div>
+        <div style="font-size:0.8rem;color:var(--text-secondary);margin-top:0.25rem;">Hostel Management System</div>
+      </div>
+
+      <!-- AUTH TABS -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
+        <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
+        <button class="auth-tab" id="tab-admin" onclick="switchAuthTab('admin')">Admin</button>
+      </div>
+
+      <!-- LOGIN FORM -->
+      <div class="auth-form" id="form-login">
+        <div class="form-group">
+          <label class="form-label">Student ID / Email</label>
+          <input class="form-input" type="text" placeholder="e.g. 2021-CS-001 or email">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" placeholder="Enter your password">
+        </div>
+        <div style="display:flex;justify-content:flex-end;">
+          <a style="font-size:0.8rem;color:var(--neon-blue);cursor:pointer;">Forgot password?</a>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:0.5rem;" onclick="loginStudent()">Sign In →</button>
+        <div class="divider"></div>
+        <div class="info-box">Demo: Use any credentials. Click <strong>Sign In</strong> to enter Student Dashboard.</div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div class="register-form" id="form-register">
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">First Name</label>
+            <input class="form-input" type="text" placeholder="Aryan">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last Name</label>
+            <input class="form-input" type="text" placeholder="Hossain">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Student ID</label>
+          <input class="form-input" type="text" placeholder="2024-CS-045">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email Address</label>
+          <input class="form-input" type="email" placeholder="student@university.edu">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-input">
+            <option value="">Select Department</option>
+            <option>Computer Science & Engineering</option>
+            <option>Electrical Engineering</option>
+            <option>Mechanical Engineering</option>
+            <option>Business Administration</option>
+            <option>Mathematics</option>
+            <option>Physics</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year of Study</label>
+          <select class="form-input">
+            <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" type="password" placeholder="Create a strong password">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Confirm Password</label>
+          <input class="form-input" type="password" placeholder="Repeat password">
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;" onclick="registerStudent()">Create Account →</button>
+      </div>
+
+      <!-- ADMIN LOGIN FORM -->
+      <div class="auth-form" id="form-admin" style="display:none;">
+        <div class="warning-box" style="margin-bottom:0.5rem;">⚠️ Admin access only. Unauthorized attempts are logged.</div>
+        <div class="form-group">
+          <label class="form-label">Admin Username</label>
+          <input class="form-input" type="text" placeholder="admin">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Admin Password</label>
+          <input class="form-input" type="password" placeholder="Enter admin password">
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center;background:linear-gradient(135deg,#b794f4,#63b3ed);" onclick="loginAdmin()">Admin Login →</button>
+      </div>
+
+      <div style="margin-top:1.5rem;text-align:center;">
+        <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-home')" style="font-size:0.78rem;">← Back to Home</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN 3: ROOM AVAILABILITY
+     ============================ -->
+<div class="screen" id="screen-rooms">
+  <nav class="navbar">
+    <div class="nav-logo" onclick="showScreen('screen-home')">UniNest</div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="showScreen('screen-home')">Home</button>
+      <button class="nav-link active" onclick="showScreen('screen-rooms')">Rooms</button>
+      <button class="nav-link" onclick="showScreen('screen-auth')">Login</button>
+      <button class="nav-btn" onclick="showScreen('screen-auth')">Apply Now</button>
+    </div>
+  </nav>
+
+  <div style="max-width:1200px;margin:0 auto;padding:2rem;">
+    <div style="margin-bottom:2rem;">
+      <h1 style="font-family:var(--font-display);font-size:2rem;font-weight:800;margin-bottom:0.25rem;">Room Availability</h1>
+      <p style="color:var(--text-secondary);">Browse all hostel rooms and check seat availability in real-time</p>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="glass-card" style="padding:1.25rem;margin-bottom:1.75rem;">
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+        <div class="form-group" style="flex:1;min-width:180px;">
+          <label class="form-label">Block</label>
+          <select class="form-input">
+            <option value="">All Blocks</option>
+            <option>Block A (Male)</option>
+            <option>Block B (Female)</option>
+            <option>Block C (Mixed)</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:150px;">
+          <label class="form-label">Room Type</label>
+          <select class="form-input">
+            <option value="">All Types</option>
+            <option>Single</option>
+            <option>Double</option>
+            <option>Triple</option>
+            <option>Quad</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:150px;">
+          <label class="form-label">Availability</label>
+          <select class="form-input">
+            <option value="">All Status</option>
+            <option>Available</option>
+            <option>Partially Full</option>
+            <option>Full</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:160px;">
+          <label class="form-label">Max Fee / Semester</label>
+          <select class="form-input">
+            <option value="">Any Price</option>
+            <option>Under ৳5,000</option>
+            <option>৳5,000 – ৳8,000</option>
+            <option>৳8,000+</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="height:42px;">🔍 Search</button>
+      </div>
+    </div>
+
+    <!-- SUMMARY STATS -->
+    <div class="grid-4" style="margin-bottom:1.75rem;">
+      <div class="stat-card blue"><div class="stat-icon" style="background:rgba(99,179,237,0.12);">🏠</div><div class="stat-value">248</div><div class="stat-label">Total Rooms</div></div>
+      <div class="stat-card cyan"><div class="stat-icon" style="background:rgba(118,228,247,0.12);">🟢</div><div class="stat-value">78</div><div class="stat-label">Fully Available</div></div>
+      <div class="stat-card purple"><div class="stat-icon" style="background:rgba(183,148,244,0.12);">🟡</div><div class="stat-value">112</div><div class="stat-label">Partially Available</div></div>
+      <div class="stat-card pink"><div class="stat-icon" style="background:rgba(246,135,179,0.12);">🔴</div><div class="stat-value">58</div><div class="stat-label">Fully Occupied</div></div>
+    </div>
+
+    <!-- ROOM CARDS GRID -->
+    <div class="grid-3" id="room-grid">
+      <!-- Rooms injected by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN 4: ROOM APPLICATION
+     ============================ -->
+<div class="screen" id="screen-apply">
+  <nav class="navbar">
+    <div class="nav-logo" onclick="showScreen('screen-home')">UniNest</div>
+    <div class="nav-links">
+      <button class="nav-link" onclick="showScreen('screen-student')">← Dashboard</button>
+    </div>
+  </nav>
+  <div style="max-width:680px;margin:0 auto;padding:2rem;">
+    <div style="margin-bottom:2rem;">
+      <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;">
+        <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-student')">←</button>
+        <h1 style="font-family:var(--font-display);font-size:1.8rem;font-weight:800;">Room Application</h1>
+      </div>
+      <p style="color:var(--text-secondary);">Fill in your preferences and submit your hostel room application</p>
+    </div>
+
+    <!-- STEP INDICATOR -->
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:2rem;">
+      <div class="step-item" id="step-1-ind" style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+        <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#63b3ed,#b794f4);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:#fff;flex-shrink:0;">1</div>
+        <span style="font-size:0.8rem;font-weight:600;color:var(--neon-blue);">Personal Info</span>
+      </div>
+      <div style="flex:1;height:2px;background:var(--glass-border);margin:0 0.5rem;"></div>
+      <div class="step-item" id="step-2-ind" style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--text-secondary);flex-shrink:0;" id="step2-num">2</div>
+        <span style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);" id="step2-label">Room Preference</span>
+      </div>
+      <div style="flex:1;height:2px;background:var(--glass-border);margin:0 0.5rem;"></div>
+      <div class="step-item" id="step-3-ind" style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+        <div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;font-size:0.8rem;font-weight:700;color:var(--text-secondary);flex-shrink:0;" id="step3-num">3</div>
+        <span style="font-size:0.8rem;font-weight:600;color:var(--text-secondary);" id="step3-label">Review & Submit</span>
+      </div>
+    </div>
+
+    <!-- STEP FORMS -->
+    <div id="apply-step-1" class="glass-card" style="padding:1.75rem;">
+      <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-bottom:1.25rem;">Personal Information</h3>
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Full Name</label><input class="form-input" value="Aryan Hossain" readonly></div>
+          <div class="form-group"><label class="form-label">Student ID</label><input class="form-input" value="2024-CS-045" readonly></div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group"><label class="form-label">Department</label><input class="form-input" value="Computer Science" readonly></div>
+          <div class="form-group"><label class="form-label">Year</label><input class="form-input" value="2nd Year" readonly></div>
+        </div>
+        <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="aryan.hossain@university.edu" readonly></div>
+        <div class="form-group"><label class="form-label">Phone Number</label><input class="form-input" placeholder="+880 1XXX-XXXXXX"></div>
+        <div class="form-group"><label class="form-label">Emergency Contact Name</label><input class="form-input" placeholder="Guardian / Parent name"></div>
+        <div class="form-group"><label class="form-label">Emergency Contact Phone</label><input class="form-input" placeholder="+880 1XXX-XXXXXX"></div>
+        <div class="form-group"><label class="form-label">Home Address</label><textarea class="form-input" rows="2" placeholder="Enter your permanent home address..."></textarea></div>
+        <button class="btn btn-primary" onclick="nextStep()" style="align-self:flex-end;">Next: Room Preference →</button>
+      </div>
+    </div>
+
+    <div id="apply-step-2" style="display:none;" class="glass-card" style="padding:1.75rem;">
+      <div style="padding:1.75rem;">
+        <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-bottom:1.25rem;">Room Preference</h3>
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div class="form-group"><label class="form-label">Preferred Block</label>
+            <select class="form-input"><option>Block A (Male)</option><option>Block B (Female)</option><option>Block C (Mixed)</option></select></div>
+          <div class="form-group"><label class="form-label">Room Type</label>
+            <select class="form-input"><option>Single (1 seat) – ৳8,000/sem</option><option>Double (2 seats) – ৳6,000/sem</option><option>Triple (3 seats) – ৳5,000/sem</option><option>Quad (4 seats) – ৳4,000/sem</option></select></div>
+          <div class="form-group"><label class="form-label">Floor Preference</label>
+            <select class="form-input"><option>No Preference</option><option>Ground Floor</option><option>1st Floor</option><option>2nd Floor</option><option>3rd Floor</option></select></div>
+          <div class="form-group"><label class="form-label">Special Requirements</label>
+            <select class="form-input"><option>None</option><option>Disability Access (Ground Floor)</option><option>Near Prayer Room</option><option>Near Study Hall</option></select></div>
+          <div class="form-group"><label class="form-label">Reason for Hostel (optional)</label>
+            <textarea class="form-input" rows="3" placeholder="Briefly explain why you need hostel accommodation..."></textarea></div>
+          <div style="display:flex;gap:0.75rem;justify-content:space-between;">
+            <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+            <button class="btn btn-primary" onclick="nextStep()">Next: Review →</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="apply-step-3" style="display:none;" class="glass-card">
+      <div style="padding:1.75rem;">
+        <h3 style="font-family:var(--font-display);font-size:1.05rem;font-weight:700;margin-bottom:1.25rem;">Review & Submit</h3>
+        <div style="background:rgba(255,255,255,0.03);border-radius:var(--radius-md);padding:1.1rem;margin-bottom:1rem;display:flex;flex-direction:column;gap:0.6rem;">
+          <div style="display:flex;justify-content:space-between;font-size:0.875rem;"><span style="color:var(--text-secondary);">Student:</span><span style="font-weight:600;">Aryan Hossain (2024-CS-045)</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.875rem;"><span style="color:var(--text-secondary);">Department:</span><span>Computer Science &amp; Engineering</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.875rem;"><span style="color:var(--text-secondary);">Preferred Block:</span><span>Block A (Male)</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.875rem;"><span style="color:var(--text-secondary);">Room Type:</span><span>Double (2 seats)</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:0.875rem;"><span style="color:var(--text-secondary);">Estimated Fee:</span><span style="color:var(--success);font-weight:600;">৳6,000 / semester</span></div>
+        </div>
+        <div class="info-box" style="margin-bottom:1rem;">By submitting, you agree to the hostel rules and regulations. The admin will review your application within 2–5 working days.</div>
+        <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:1.25rem;">
+          <input type="checkbox" id="agree-check" style="width:16px;height:16px;accent-color:var(--neon-blue);">
+          <label for="agree-check" style="font-size:0.85rem;cursor:pointer;">I agree to the hostel rules and regulations</label>
+        </div>
+        <div style="display:flex;gap:0.75rem;justify-content:space-between;">
+          <button class="btn btn-secondary" onclick="prevStep()">← Back</button>
+          <button class="btn btn-primary" onclick="submitApplication()">✓ Submit Application</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN 5: STUDENT DASHBOARD
+     ============================ -->
+<div class="screen" id="screen-student">
+  <div class="dashboard-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;padding:0.5rem 0.75rem 1rem;background:linear-gradient(135deg,#63b3ed,#b794f4);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">UniNest</div>
+      <div class="sidebar-section">Main</div>
+      <button class="sidebar-item active" onclick="showStudentTab('overview')"><span class="icon">📊</span> Overview</button>
+      <button class="sidebar-item" onclick="showScreen('screen-rooms')"><span class="icon">🏠</span> Browse Rooms</button>
+      <button class="sidebar-item" onclick="showScreen('screen-apply')"><span class="icon">📋</span> Apply for Room</button>
+      <div class="sidebar-section">My Account</div>
+      <button class="sidebar-item" onclick="showStudentTab('application')"><span class="icon">📄</span> My Application</button>
+      <button class="sidebar-item" onclick="showStudentTab('room')"><span class="icon">🛏️</span> My Room</button>
+      <button class="sidebar-item" onclick="showStudentTab('payments')"><span class="icon">💳</span> Payments</button>
+      <button class="sidebar-item" onclick="showStudentTab('complaints')"><span class="icon">📣</span> Complaints</button>
+      <div class="sidebar-section">Account</div>
+      <button class="sidebar-item" onclick="showScreen('screen-home')"><span class="icon">🚪</span> Logout</button>
+      <div class="sidebar-user">
+        <div class="avatar">AH</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">Aryan Hossain</div>
+          <div class="sidebar-user-role">2024-CS-045</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="dashboard-main">
+      <!-- OVERVIEW TAB -->
+      <div id="student-overview" class="student-tab">
+        <div class="page-title">Welcome back, Aryan 👋</div>
+        <div class="page-subtitle">Here's a snapshot of your hostel status</div>
+
+        <div class="grid-4" style="margin-bottom:1.5rem;">
+          <div class="stat-card blue"><div class="stat-icon" style="background:rgba(99,179,237,0.12);">📋</div><div class="stat-value">1</div><div class="stat-label">Active Application</div></div>
+          <div class="stat-card purple"><div class="stat-icon" style="background:rgba(183,148,244,0.12);">🏠</div><div class="stat-value">—</div><div class="stat-label">Room Assigned</div></div>
+          <div class="stat-card cyan"><div class="stat-icon" style="background:rgba(118,228,247,0.12);">💳</div><div class="stat-value">৳0</div><div class="stat-label">Balance Due</div></div>
+          <div class="stat-card green"><div class="stat-icon" style="background:rgba(104,211,145,0.12);">📣</div><div class="stat-value">0</div><div class="stat-label">Open Complaints</div></div>
+        </div>
+
+        <div class="grid-2-1">
+          <div>
+            <!-- APPLICATION STATUS -->
+            <div class="table-wrapper" style="margin-bottom:1.25rem;">
+              <div class="table-header">
+                <div class="section-title">Application Status</div>
+                <span class="badge badge-pending">Pending Review</span>
+              </div>
+              <div style="padding:1.25rem;">
+                <div style="display:flex;flex-direction:column;gap:0.75rem;">
+                  <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#63b3ed,#b794f4);display:flex;align-items:center;justify-content:center;color:#fff;font-size:0.7rem;font-weight:700;flex-shrink:0;">✓</div>
+                    <div><div style="font-size:0.875rem;font-weight:600;">Application Submitted</div><div style="font-size:0.75rem;color:var(--text-secondary);">Jan 15, 2025 · 10:30 AM</div></div>
+                  </div>
+                  <div style="margin-left:14px;width:1px;height:24px;background:linear-gradient(180deg,var(--neon-blue),transparent);"></div>
+                  <div style="display:flex;align-items:center;gap:0.75rem;">
+                    <div style="width:28px;height:28px;border-radius:50%;background:rgba(246,224,94,0.15);border:2px solid var(--warning);display:flex;align-items:center;justify-content:center;color:var(--warning);font-size:0.7rem;font-weight:700;flex-shrink:0;animation:pulse 2s infinite;">⋯</div>
+                    <div><div style="font-size:0.875rem;font-weight:600;">Admin Review</div><div style="font-size:0.75rem;color:var(--text-secondary);">In progress — estimated 2 days</div></div>
+                  </div>
+                  <div style="margin-left:14px;width:1px;height:24px;background:var(--glass-border);"></div>
+                  <div style="display:flex;align-items:center;gap:0.75rem;opacity:0.4;">
+                    <div style="width:28px;height:28px;border-radius:50%;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;font-weight:700;flex-shrink:0;">3</div>
+                    <div><div style="font-size:0.875rem;font-weight:600;">Room Allocation</div><div style="font-size:0.75rem;color:var(--text-secondary);">Awaiting approval</div></div>
+                  </div>
+                  <div style="margin-left:14px;width:1px;height:24px;background:var(--glass-border);"></div>
+                  <div style="display:flex;align-items:center;gap:0.75rem;opacity:0.4;">
+                    <div style="width:28px;height:28px;border-radius:50%;border:1px solid var(--glass-border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:0.75rem;font-weight:700;flex-shrink:0;">4</div>
+                    <div><div style="font-size:0.875rem;font-weight:600;">Confirmation & Payment</div><div style="font-size:0.75rem;color:var(--text-secondary);">Final step</div></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- QUICK ACTIONS -->
+            <div class="glass-card" style="padding:1.25rem;">
+              <div class="section-title" style="margin-bottom:1rem;">Quick Actions</div>
+              <div style="display:flex;gap:0.75rem;flex-wrap:wrap;">
+                <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-apply')">📋 New Application</button>
+                <button class="btn btn-secondary btn-sm" onclick="showStudentTab('complaints')">📣 Submit Complaint</button>
+                <button class="btn btn-secondary btn-sm" onclick="showStudentTab('payments')">💳 View Payments</button>
+                <button class="btn btn-secondary btn-sm" onclick="showScreen('screen-rooms')">🏠 Browse Rooms</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- SIDEBAR WIDGETS -->
+          <div style="display:flex;flex-direction:column;gap:1rem;">
+            <div class="glass-card" style="padding:1.25rem;">
+              <div class="section-title" style="margin-bottom:0.75rem;">Notices 📢</div>
+              <div style="display:flex;flex-direction:column;gap:0.6rem;">
+                <div style="font-size:0.8rem;padding:0.5rem;border-left:2px solid var(--neon-blue);background:rgba(99,179,237,0.05);border-radius:0 var(--radius-sm) var(--radius-sm) 0;">Semester 2 room allocations open Jan 20</div>
+                <div style="font-size:0.8rem;padding:0.5rem;border-left:2px solid var(--warning);background:rgba(246,224,94,0.05);border-radius:0 var(--radius-sm) var(--radius-sm) 0;">Fee payment deadline: Feb 1, 2025</div>
+                <div style="font-size:0.8rem;padding:0.5rem;border-left:2px solid var(--success);background:rgba(104,211,145,0.05);border-radius:0 var(--radius-sm) var(--radius-sm) 0;">Water outage Block A: Jan 18, 6-8 AM</div>
+              </div>
+            </div>
+            <div class="glass-card" style="padding:1.25rem;">
+              <div class="section-title" style="margin-bottom:0.75rem;">My Preferences</div>
+              <div style="display:flex;flex-direction:column;gap:0.4rem;font-size:0.825rem;">
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Block:</span><span>Block A (Male)</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Type:</span><span>Double Room</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Floor:</span><span>No Preference</span></div>
+                <div style="display:flex;justify-content:space-between;"><span style="color:var(--text-secondary);">Fee:</span><span style="color:var(--success);">৳6,000/sem</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APPLICATION TAB -->
+      <div id="student-application" class="student-tab" style="display:none;">
+        <div class="page-title">My Application</div>
+        <div class="page-subtitle">Track the status of your hostel application</div>
+        <div class="table-wrapper">
+          <div class="table-header"><div class="section-title">Application #HMS-2025-0045</div><span class="badge badge-pending">Pending</span></div>
+          <table class="data-table">
+            <tbody>
+              <tr><td style="color:var(--text-secondary);width:35%;">Application ID</td><td><code style="font-family:var(--font-mono);color:var(--neon-blue);font-size:0.8rem;">HMS-2025-0045</code></td></tr>
+              <tr><td style="color:var(--text-secondary);">Submitted On</td><td>January 15, 2025</td></tr>
+              <tr><td style="color:var(--text-secondary);">Student Name</td><td>Aryan Hossain</td></tr>
+              <tr><td style="color:var(--text-secondary);">Student ID</td><td>2024-CS-045</td></tr>
+              <tr><td style="color:var(--text-secondary);">Preferred Block</td><td>Block A (Male)</td></tr>
+              <tr><td style="color:var(--text-secondary);">Room Type</td><td>Double Room (2 seats)</td></tr>
+              <tr><td style="color:var(--text-secondary);">Status</td><td><span class="badge badge-pending">Pending Admin Review</span></td></tr>
+              <tr><td style="color:var(--text-secondary);">Assigned Room</td><td style="color:var(--text-muted);">Not yet assigned</td></tr>
+            </tbody>
+          </table>
+          <div style="padding:1rem;border-top:1px solid var(--glass-border);">
+            <button class="btn btn-danger btn-sm">🗑️ Withdraw Application</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- MY ROOM TAB -->
+      <div id="student-room" class="student-tab" style="display:none;">
+        <div class="page-title">My Room</div>
+        <div class="page-subtitle">Room assignment details</div>
+        <div class="info-box">Your room has not yet been assigned. Please check back after your application is approved.</div>
+        <div style="margin-top:1.5rem;" class="glass-card" style="padding:1.25rem;">
+          <div style="padding:1.25rem;opacity:0.5;text-align:center;padding:3rem 1rem;">
+            <div style="font-size:3rem;margin-bottom:0.75rem;">🏠</div>
+            <div style="font-family:var(--font-display);font-size:1rem;font-weight:700;margin-bottom:0.3rem;">No Room Assigned Yet</div>
+            <div style="font-size:0.85rem;color:var(--text-secondary);">Once the admin approves your application, your room details will appear here.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PAYMENTS TAB -->
+      <div id="student-payments" class="student-tab" style="display:none;">
+        <div class="page-title">Payments</div>
+        <div class="page-subtitle">Your hostel fee payment history and dues</div>
+        <div class="grid-3" style="margin-bottom:1.5rem;">
+          <div class="stat-card blue"><div class="stat-value" style="font-size:1.5rem;">৳0</div><div class="stat-label">Total Paid</div></div>
+          <div class="stat-card pink"><div class="stat-value" style="font-size:1.5rem;">৳6,000</div><div class="stat-label">Amount Due</div></div>
+          <div class="stat-card green"><div class="stat-value" style="font-size:1.5rem;">Feb 1</div><div class="stat-label">Due Date</div></div>
+        </div>
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="section-title">Payment History</div>
+            <button class="btn btn-primary btn-sm" onclick="showToast('Payment portal opens after room allocation.','info')">💳 Pay Now</button>
+          </div>
+          <div style="padding:3rem 1rem;text-align:center;opacity:0.5;">
+            <div style="font-size:2.5rem;margin-bottom:0.5rem;">💳</div>
+            <div style="font-size:0.875rem;color:var(--text-secondary);">No payment records yet. Payments become available after room allocation.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- COMPLAINTS TAB -->
+      <div id="student-complaints" class="student-tab" style="display:none;">
+        <div class="page-title">Complaints & Requests</div>
+        <div class="page-subtitle">Submit maintenance issues or other hostel complaints</div>
+        <div class="grid-2-1">
+          <div>
+            <div class="table-wrapper" style="margin-bottom:1.25rem;">
+              <div class="table-header"><div class="section-title">My Complaints</div></div>
+              <div style="padding:2.5rem 1rem;text-align:center;opacity:0.5;">
+                <div style="font-size:2rem;margin-bottom:0.4rem;">📣</div>
+                <div style="font-size:0.85rem;color:var(--text-secondary);">No complaints submitted yet.</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="glass-card" style="padding:1.25rem;">
+              <div class="section-title" style="margin-bottom:1rem;">New Complaint</div>
+              <div style="display:flex;flex-direction:column;gap:0.85rem;">
+                <div class="form-group">
+                  <label class="form-label">Category</label>
+                  <select class="form-input">
+                    <option>Maintenance / Repair</option>
+                    <option>Water / Plumbing</option>
+                    <option>Electricity</option>
+                    <option>Internet / WiFi</option>
+                    <option>Cleanliness</option>
+                    <option>Security</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Subject</label>
+                  <input class="form-input" placeholder="Brief description">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Details</label>
+                  <textarea class="form-input" rows="4" placeholder="Describe the issue in detail..."></textarea>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">Priority</label>
+                  <select class="form-input">
+                    <option>Low</option><option>Medium</option><option>High</option><option>Urgent</option>
+                  </select>
+                </div>
+                <button class="btn btn-primary" onclick="showToast('Complaint submitted successfully!','success')">📤 Submit Complaint</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN 6: ADMIN DASHBOARD
+     ============================ -->
+<div class="screen" id="screen-admin">
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;padding:0.5rem 0.75rem 1rem;background:linear-gradient(135deg,#b794f4,#63b3ed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">UniNest Admin</div>
+      <div class="sidebar-section">Dashboard</div>
+      <button class="sidebar-item active" onclick="showAdminTab('overview')"><span class="icon">📊</span> Overview</button>
+      <div class="sidebar-section">Management</div>
+      <button class="sidebar-item" onclick="showScreen('screen-room-mgmt')"><span class="icon">🏠</span> Room Management</button>
+      <button class="sidebar-item" onclick="showAdminTab('students')"><span class="icon">👥</span> Students</button>
+      <button class="sidebar-item" onclick="showAdminTab('applications')"><span class="icon">📋</span> Applications</button>
+      <button class="sidebar-item" onclick="showAdminTab('allocations')"><span class="icon">🗺️</span> Allocations</button>
+      <div class="sidebar-section">Finance & Support</div>
+      <button class="sidebar-item" onclick="showScreen('screen-fees')"><span class="icon">💳</span> Fee Tracking</button>
+      <button class="sidebar-item" onclick="showAdminTab('complaints')"><span class="icon">📣</span> Complaints</button>
+      <button class="sidebar-item" onclick="showAdminTab('reports')"><span class="icon">📈</span> Reports</button>
+      <div class="sidebar-section">System</div>
+      <button class="sidebar-item" onclick="showScreen('screen-home')"><span class="icon">🚪</span> Logout</button>
+      <div class="sidebar-user">
+        <div class="avatar" style="background:linear-gradient(135deg,#b794f4,#63b3ed);">AD</div>
+        <div class="sidebar-user-info">
+          <div class="sidebar-user-name">System Admin</div>
+          <div class="sidebar-user-role">Super Admin</div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <!-- ADMIN OVERVIEW -->
+      <div id="admin-overview" class="admin-tab">
+        <div class="page-title">Admin Dashboard</div>
+        <div class="page-subtitle">Complete overview of hostel management system — Jan 2025</div>
+
+        <div class="grid-4" style="margin-bottom:1.5rem;">
+          <div class="stat-card blue"><div class="stat-icon" style="background:rgba(99,179,237,0.12);">🏠</div><div class="stat-value">248</div><div class="stat-label">Total Rooms</div><div class="stat-change">↑ 4 added this month</div></div>
+          <div class="stat-card purple"><div class="stat-icon" style="background:rgba(183,148,244,0.12);">👥</div><div class="stat-value">928</div><div class="stat-label">Students Housed</div><div class="stat-change">↑ 42 new this sem</div></div>
+          <div class="stat-card cyan"><div class="stat-icon" style="background:rgba(118,228,247,0.12);">📋</div><div class="stat-value">23</div><div class="stat-label">Pending Apps</div><div class="stat-change">↑ 7 today</div></div>
+          <div class="stat-card green"><div class="stat-icon" style="background:rgba(104,211,145,0.12);">💰</div><div class="stat-value">৳4.2M</div><div class="stat-label">Fees Collected</div><div class="stat-change">↑ ৳0.6M this week</div></div>
+        </div>
+
+        <div class="grid-2" style="margin-bottom:1.25rem;">
+          <!-- RECENT APPLICATIONS -->
+          <div class="table-wrapper">
+            <div class="table-header">
+              <div class="section-title">Recent Applications</div>
+              <button class="btn btn-secondary btn-sm" onclick="showAdminTab('applications')">View All</button>
+            </div>
+            <table class="data-table">
+              <thead><tr><th>Student</th><th>Type</th><th>Status</th><th>Action</th></tr></thead>
+              <tbody>
+                <tr><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:28px;height:28px;font-size:0.65rem;">AH</div>Aryan Hossain</div></td><td><span class="tag tag-blue">Double</span></td><td><span class="badge badge-pending">Pending</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-success btn-sm" onclick="showToast('Application approved!','success')">✓</button><button class="btn btn-danger btn-sm" onclick="showToast('Application rejected.','error')">✗</button></div></td></tr>
+                <tr><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:28px;height:28px;font-size:0.65rem;background:linear-gradient(135deg,#b794f4,#f687b3);">NS</div>Nadia Sultana</div></td><td><span class="tag tag-purple">Single</span></td><td><span class="badge badge-approved">Approved</span></td><td><button class="btn btn-secondary btn-sm">Allocate</button></td></tr>
+                <tr><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:28px;height:28px;font-size:0.65rem;background:linear-gradient(135deg,#68d391,#63b3ed);">RK</div>Rahim Khan</div></td><td><span class="tag tag-cyan">Triple</span></td><td><span class="badge badge-pending">Pending</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-success btn-sm" onclick="showToast('Application approved!','success')">✓</button><button class="btn btn-danger btn-sm" onclick="showToast('Application rejected.','error')">✗</button></div></td></tr>
+                <tr><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:28px;height:28px;font-size:0.65rem;background:linear-gradient(135deg,#f6e05e,#f687b3);">SK</div>Sara Khan</div></td><td><span class="tag tag-blue">Double</span></td><td><span class="badge badge-rejected">Rejected</span></td><td><span style="font-size:0.75rem;color:var(--text-muted);">Closed</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- OCCUPANCY CHART -->
+          <div class="glass-card" style="padding:1.25rem;">
+            <div class="section-title" style="margin-bottom:0.75rem;">Monthly Occupancy</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:0.5rem;">
+              <span style="font-size:0.75rem;color:var(--text-secondary);">Occupancy Rate (%)</span>
+              <span style="font-size:0.75rem;color:var(--neon-blue);font-family:var(--font-mono);">Current: 74.8%</span>
+            </div>
+            <div class="mini-chart" id="mini-chart"></div>
+            <div style="display:flex;justify-content:space-between;margin-top:0.5rem;">
+              <span style="font-size:0.7rem;color:var(--text-muted);">Aug</span>
+              <span style="font-size:0.7rem;color:var(--text-muted);">Sep</span>
+              <span style="font-size:0.7rem;color:var(--text-muted);">Oct</span>
+              <span style="font-size:0.7rem;color:var(--text-muted);">Nov</span>
+              <span style="font-size:0.7rem;color:var(--text-muted);">Dec</span>
+              <span style="font-size:0.7rem;color:var(--neon-blue);">Jan</span>
+            </div>
+            <div class="divider"></div>
+            <div class="grid-2" style="gap:0.75rem;margin-top:0.25rem;">
+              <div style="font-size:0.8rem;"><div style="color:var(--text-secondary);">Block A</div><div class="progress-bar"><div class="progress-fill" style="width:82%;"></div></div><div style="font-size:0.7rem;color:var(--neon-blue);margin-top:3px;">82% full</div></div>
+              <div style="font-size:0.8rem;"><div style="color:var(--text-secondary);">Block B</div><div class="progress-bar" style="margin-top:0.5rem;"><div class="progress-fill" style="width:71%;background:linear-gradient(90deg,#b794f4,#63b3ed);"></div></div><div style="font-size:0.7rem;color:var(--neon-purple);margin-top:3px;">71% full</div></div>
+              <div style="font-size:0.8rem;"><div style="color:var(--text-secondary);">Block C</div><div class="progress-bar" style="margin-top:0.5rem;"><div class="progress-fill" style="width:64%;background:linear-gradient(90deg,#76e4f7,#63b3ed);"></div></div><div style="font-size:0.7rem;color:var(--neon-cyan);margin-top:3px;">64% full</div></div>
+              <div style="font-size:0.8rem;"><div style="color:var(--text-secondary);">Overall</div><div class="progress-bar" style="margin-top:0.5rem;"><div class="progress-fill" style="width:74%;"></div></div><div style="font-size:0.7rem;color:var(--success);margin-top:3px;">74.8% full</div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- OPEN COMPLAINTS + FEE SUMMARY -->
+        <div class="grid-2">
+          <div class="glass-card" style="padding:1.25rem;">
+            <div class="section-title" style="margin-bottom:0.75rem;">Open Complaints (5)</div>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;">
+              <div class="complaint-item"><div style="font-size:1.1rem;">🔧</div><div><div style="font-size:0.825rem;font-weight:600;">Room 204 — Broken fan</div><div style="font-size:0.75rem;color:var(--text-secondary);">Block A · 2 days ago</div></div><span class="badge badge-open" style="margin-left:auto;">Open</span></div>
+              <div class="complaint-item"><div style="font-size:1.1rem;">💧</div><div><div style="font-size:0.825rem;font-weight:600;">Room 312 — Leaking tap</div><div style="font-size:0.75rem;color:var(--text-secondary);">Block B · 1 day ago</div></div><span class="badge badge-open" style="margin-left:auto;">Open</span></div>
+              <div class="complaint-item"><div style="font-size:1.1rem;">📶</div><div><div style="font-size:0.825rem;font-weight:600;">Block C — WiFi down</div><div style="font-size:0.75rem;color:var(--text-secondary);">Block C · 3 hours ago</div></div><span class="badge badge-open" style="margin-left:auto;">Open</span></div>
+            </div>
+            <button class="btn btn-secondary btn-sm" style="margin-top:0.75rem;width:100%;justify-content:center;" onclick="showScreen('screen-fees')">Manage Complaints →</button>
+          </div>
+          <div class="glass-card" style="padding:1.25rem;">
+            <div class="section-title" style="margin-bottom:0.75rem;">Fee Collection Summary</div>
+            <div style="display:flex;flex-direction:column;gap:0.5rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--glass-border);">
+                <span style="font-size:0.825rem;color:var(--text-secondary);">Total Expected</span>
+                <span style="font-size:0.9rem;font-weight:700;font-family:var(--font-mono);">৳5.6M</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--glass-border);">
+                <span style="font-size:0.825rem;color:var(--text-secondary);">Collected</span>
+                <span style="font-size:0.9rem;font-weight:700;color:var(--success);font-family:var(--font-mono);">৳4.2M</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;">
+                <span style="font-size:0.825rem;color:var(--text-secondary);">Outstanding</span>
+                <span style="font-size:0.9rem;font-weight:700;color:var(--danger);font-family:var(--font-mono);">৳1.4M</span>
+              </div>
+              <div class="progress-bar" style="margin-top:0.25rem;"><div class="progress-fill" style="width:75%;"></div></div>
+              <div style="font-size:0.75rem;color:var(--text-secondary);text-align:right;">75% collected</div>
+            </div>
+            <button class="btn btn-secondary btn-sm" style="margin-top:0.5rem;width:100%;justify-content:center;" onclick="showScreen('screen-fees')">Full Fee Report →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STUDENTS TAB -->
+      <div id="admin-students" class="admin-tab" style="display:none;">
+        <div class="page-title">Student Records</div>
+        <div class="page-subtitle">Manage all registered students in the system</div>
+        <div class="table-wrapper">
+          <div class="table-header">
+            <input class="form-input" placeholder="🔍 Search by name, ID, or department..." style="max-width:320px;padding:0.5rem 0.9rem;font-size:0.85rem;">
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-student')">+ Add Student</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>#</th><th>Student</th><th>ID</th><th>Department</th><th>Year</th><th>Room</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--text-muted);">01</td><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:30px;height:30px;font-size:0.7rem;">NS</div><div><div style="font-weight:600;font-size:0.85rem;">Nadia Sultana</div><div style="font-size:0.73rem;color:var(--text-secondary);">nadia@uni.edu</div></div></div></td><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">2024-EE-012</code></td><td>Electrical Eng.</td><td>1st</td><td><span class="badge badge-approved">A-204</span></td><td><span class="badge badge-approved">Active</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td style="color:var(--text-muted);">02</td><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:30px;height:30px;font-size:0.7rem;">RK</div><div><div style="font-weight:600;font-size:0.85rem;">Rahim Khan</div><div style="font-size:0.73rem;color:var(--text-secondary);">rahim@uni.edu</div></div></div></td><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">2023-ME-034</code></td><td>Mechanical Eng.</td><td>2nd</td><td><span class="badge badge-approved">B-110</span></td><td><span class="badge badge-approved">Active</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td style="color:var(--text-muted);">03</td><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:30px;height:30px;font-size:0.7rem;background:linear-gradient(135deg,#f6e05e,#f687b3);">SK</div><div><div style="font-weight:600;font-size:0.85rem;">Sara Khan</div><div style="font-size:0.73rem;color:var(--text-secondary);">sara@uni.edu</div></div></div></td><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">2024-CS-071</code></td><td>Computer Science</td><td>1st</td><td><span style="color:var(--text-muted);font-size:0.8rem;">Not assigned</span></td><td><span class="badge badge-pending">Pending</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+              <tr><td style="color:var(--text-muted);">04</td><td><div style="display:flex;align-items:center;gap:0.5rem;"><div class="avatar" style="width:30px;height:30px;font-size:0.7rem;background:linear-gradient(135deg,#68d391,#63b3ed);">MA</div><div><div style="font-weight:600;font-size:0.85rem;">Mihad Ahmed</div><div style="font-size:0.73rem;color:var(--text-secondary);">mihad@uni.edu</div></div></div></td><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">2022-BA-009</code></td><td>Business Admin.</td><td>3rd</td><td><span class="badge badge-approved">C-315</span></td><td><span class="badge badge-approved">Active</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            </tbody>
+          </table>
+          <div style="padding:0.75rem 1rem;border-top:1px solid var(--glass-border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.8rem;color:var(--text-secondary);">Showing 4 of 928 students</span>
+            <div style="display:flex;gap:4px;">
+              <button class="btn btn-secondary btn-sm">← Prev</button>
+              <button class="btn btn-secondary btn-sm">Next →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APPLICATIONS TAB -->
+      <div id="admin-applications" class="admin-tab" style="display:none;">
+        <div class="page-title">Room Applications</div>
+        <div class="page-subtitle">Review and process all hostel room applications</div>
+        <div class="sub-tabs">
+          <button class="sub-tab active">All (23)</button>
+          <button class="sub-tab">Pending (16)</button>
+          <button class="sub-tab">Approved (5)</button>
+          <button class="sub-tab">Rejected (2)</button>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead><tr><th>App ID</th><th>Student</th><th>Type</th><th>Block Pref</th><th>Submitted</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">#045</code></td><td>Aryan Hossain</td><td><span class="tag tag-blue">Double</span></td><td>Block A</td><td>Jan 15</td><td><span class="badge badge-pending">Pending</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-success btn-sm" onclick="showToast('Approved!','success')">✓ Approve</button><button class="btn btn-danger btn-sm" onclick="showToast('Rejected.','error')">✗ Reject</button></div></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">#044</code></td><td>Nadia Sultana</td><td><span class="tag tag-purple">Single</span></td><td>Block B</td><td>Jan 14</td><td><span class="badge badge-approved">Approved</span></td><td><button class="btn btn-secondary btn-sm" onclick="openModal('modal-allocate')">🗺️ Allocate Room</button></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">#043</code></td><td>Rahim Khan</td><td><span class="tag tag-cyan">Triple</span></td><td>Block A</td><td>Jan 14</td><td><span class="badge badge-pending">Pending</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-success btn-sm" onclick="showToast('Approved!','success')">✓ Approve</button><button class="btn btn-danger btn-sm" onclick="showToast('Rejected.','error')">✗ Reject</button></div></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.78rem;color:var(--neon-blue);">#042</code></td><td>Sara Khan</td><td><span class="tag tag-blue">Double</span></td><td>Block B</td><td>Jan 13</td><td><span class="badge badge-rejected">Rejected</span></td><td><span style="font-size:0.75rem;color:var(--text-muted);">Closed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ALLOCATIONS TAB -->
+      <div id="admin-allocations" class="admin-tab" style="display:none;">
+        <div class="page-title">Room Allocations</div>
+        <div class="page-subtitle">Manage current room allocations and assignments</div>
+        <div class="table-wrapper">
+          <div class="table-header">
+            <div class="section-title">Current Allocations</div>
+            <button class="btn btn-primary btn-sm" onclick="openModal('modal-allocate')">+ New Allocation</button>
+          </div>
+          <table class="data-table">
+            <thead><tr><th>Room</th><th>Block</th><th>Type</th><th>Students Assigned</th><th>Capacity</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>
+              <tr><td><strong>A-204</strong></td><td>Block A</td><td>Double</td><td>Nadia S. + 1</td><td>2/2</td><td><span class="badge badge-full">Full</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+              <tr><td><strong>A-108</strong></td><td>Block A</td><td>Triple</td><td>Ali R. + 2</td><td>3/3</td><td><span class="badge badge-full">Full</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+              <tr><td><strong>B-110</strong></td><td>Block B</td><td>Single</td><td>Rahim K.</td><td>1/1</td><td><span class="badge badge-full">Full</span></td><td><button class="btn btn-secondary btn-sm">View</button></td></tr>
+              <tr><td><strong>B-205</strong></td><td>Block B</td><td>Double</td><td>Fatima A.</td><td>1/2</td><td><span class="badge badge-available">Partial</span></td><td><button class="btn btn-success btn-sm" onclick="openModal('modal-allocate')">+ Assign</button></td></tr>
+              <tr><td><strong>C-315</strong></td><td>Block C</td><td>Triple</td><td>Mihad A. + 1</td><td>2/3</td><td><span class="badge badge-available">Partial</span></td><td><button class="btn btn-success btn-sm" onclick="openModal('modal-allocate')">+ Assign</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ADMIN COMPLAINTS TAB -->
+      <div id="admin-complaints" class="admin-tab" style="display:none;">
+        <div class="page-title">Complaints Management</div>
+        <div class="page-subtitle">Track and resolve student complaints</div>
+        <div class="sub-tabs">
+          <button class="sub-tab active">All</button>
+          <button class="sub-tab">Open</button>
+          <button class="sub-tab">In Progress</button>
+          <button class="sub-tab">Resolved</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.75rem;">
+          <div class="complaint-item"><div style="font-size:1.4rem;">🔧</div><div style="flex:1;"><div style="font-size:0.875rem;font-weight:600;">Room 204 — Broken ceiling fan</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">Block A · Reported by Nadia S. · 2 days ago</div></div><span class="badge badge-open">Open</span><button class="btn btn-success btn-sm" onclick="showToast('Complaint marked resolved!','success')">✓ Resolve</button></div>
+          <div class="complaint-item"><div style="font-size:1.4rem;">💧</div><div style="flex:1;"><div style="font-size:0.875rem;font-weight:600;">Room 312 — Leaking water tap</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">Block B · Reported by Rahim K. · 1 day ago</div></div><span class="badge badge-open">Open</span><button class="btn btn-success btn-sm" onclick="showToast('Complaint marked resolved!','success')">✓ Resolve</button></div>
+          <div class="complaint-item"><div style="font-size:1.4rem;">📶</div><div style="flex:1;"><div style="font-size:0.875rem;font-weight:600;">Block C entire floor — WiFi not working</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">Block C · Reported by Mihad A. · 3 hours ago</div></div><span class="badge badge-open" style="white-space:nowrap;">Open</span><button class="btn btn-success btn-sm" onclick="showToast('Complaint marked resolved!','success')">✓ Resolve</button></div>
+          <div class="complaint-item"><div style="font-size:1.4rem;">💡</div><div style="flex:1;"><div style="font-size:0.875rem;font-weight:600;">Block A corridor — Light bulb out</div><div style="font-size:0.78rem;color:var(--text-secondary);margin-top:2px;">Block A · Reported by Ali R. · 5 days ago</div></div><span class="badge badge-resolved">Resolved</span><span style="color:var(--text-muted);font-size:0.78rem;white-space:nowrap;">Fixed</span></div>
+        </div>
+      </div>
+
+      <!-- REPORTS TAB -->
+      <div id="admin-reports" class="admin-tab" style="display:none;">
+        <div class="page-title">Reports & Analytics</div>
+        <div class="page-subtitle">System-wide reports and insights</div>
+        <div class="grid-3" style="margin-bottom:1.5rem;">
+          <div class="stat-card blue"><div class="stat-value">74.8%</div><div class="stat-label">Occupancy Rate</div></div>
+          <div class="stat-card green"><div class="stat-value">96.2%</div><div class="stat-label">Fee Collection Rate</div></div>
+          <div class="stat-card purple"><div class="stat-value">92%</div><div class="stat-label">Complaint Resolution</div></div>
+        </div>
+        <div class="info-box">📈 Full reports module integrates with PHP backend — charts connect to MySQL data. This screen demonstrates the reporting UI prototype.</div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN 7: ROOM MANAGEMENT
+     ============================ -->
+<div class="screen" id="screen-room-mgmt">
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;padding:0.5rem 0.75rem 1rem;background:linear-gradient(135deg,#b794f4,#63b3ed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">UniNest Admin</div>
+      <div class="sidebar-section">Navigation</div>
+      <button class="sidebar-item" onclick="showScreen('screen-admin')"><span class="icon">📊</span> Dashboard</button>
+      <button class="sidebar-item active"><span class="icon">🏠</span> Room Management</button>
+      <button class="sidebar-item" onclick="showScreen('screen-fees')"><span class="icon">💳</span> Fee Tracking</button>
+      <button class="sidebar-item" onclick="showScreen('screen-home')"><span class="icon">🚪</span> Logout</button>
+      <div class="sidebar-user">
+        <div class="avatar" style="background:linear-gradient(135deg,#b794f4,#63b3ed);">AD</div>
+        <div class="sidebar-user-info"><div class="sidebar-user-name">System Admin</div><div class="sidebar-user-role">Super Admin</div></div>
+      </div>
+    </aside>
+    <main class="dashboard-main">
+      <div class="page-title">Room Management</div>
+      <div class="page-subtitle">Add, edit, and manage all hostel rooms and blocks</div>
+
+      <div class="grid-4" style="margin-bottom:1.5rem;">
+        <div class="stat-card blue"><div class="stat-value">248</div><div class="stat-label">Total Rooms</div></div>
+        <div class="stat-card green"><div class="stat-value">312</div><div class="stat-label">Available Seats</div></div>
+        <div class="stat-card purple"><div class="stat-value">928</div><div class="stat-label">Occupied Seats</div></div>
+        <div class="stat-card pink"><div class="stat-value">1,240</div><div class="stat-label">Total Capacity</div></div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-header">
+          <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+            <div class="section-title">All Rooms</div>
+            <div class="sub-tabs" style="margin:0;">
+              <button class="sub-tab active">All</button>
+              <button class="sub-tab">Block A</button>
+              <button class="sub-tab">Block B</button>
+              <button class="sub-tab">Block C</button>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modal-add-room')">+ Add Room</button>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Room No.</th><th>Block</th><th>Floor</th><th>Type</th><th>Capacity</th><th>Occupied</th><th>Fee/Sem</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><strong>A-101</strong></td><td>Block A</td><td>1st</td><td><span class="tag tag-blue">Single</span></td><td>1</td><td>1</td><td>৳8,000</td><td><span class="badge badge-full">Full</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            <tr><td><strong>A-204</strong></td><td>Block A</td><td>2nd</td><td><span class="tag tag-purple">Double</span></td><td>2</td><td>2</td><td>৳6,000</td><td><span class="badge badge-full">Full</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            <tr><td><strong>A-312</strong></td><td>Block A</td><td>3rd</td><td><span class="tag tag-cyan">Triple</span></td><td>3</td><td>1</td><td>৳5,000</td><td><span class="badge badge-available">Available</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            <tr><td><strong>B-110</strong></td><td>Block B</td><td>1st</td><td><span class="tag tag-blue">Single</span></td><td>1</td><td>1</td><td>৳8,000</td><td><span class="badge badge-full">Full</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            <tr><td><strong>B-205</strong></td><td>Block B</td><td>2nd</td><td><span class="tag tag-purple">Double</span></td><td>2</td><td>1</td><td>৳6,000</td><td><span class="badge badge-available">Available</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            <tr><td><strong>C-315</strong></td><td>Block C</td><td>3rd</td><td><span class="tag tag-cyan">Triple</span></td><td>3</td><td>2</td><td>৳5,000</td><td><span class="badge badge-available">Available</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+            <tr><td><strong>C-401</strong></td><td>Block C</td><td>4th</td><td><span class="tag tag-blue">Quad</span></td><td>4</td><td>4</td><td>৳4,000</td><td><span class="badge badge-full">Full</span></td><td><div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">✏️ Edit</button><button class="btn btn-danger btn-sm">🗑️</button></div></td></tr>
+          </tbody>
+        </table>
+        <div style="padding:0.75rem 1rem;border-top:1px solid var(--glass-border);display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.8rem;color:var(--text-secondary);">Showing 7 of 248 rooms</span>
+          <div style="display:flex;gap:4px;"><button class="btn btn-secondary btn-sm">← Prev</button><button class="btn btn-secondary btn-sm">Next →</button></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================
+     SCREEN 8: FEE & COMPLAINT TRACKING
+     ============================ -->
+<div class="screen" id="screen-fees">
+  <div class="dashboard-layout">
+    <aside class="sidebar">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;padding:0.5rem 0.75rem 1rem;background:linear-gradient(135deg,#b794f4,#63b3ed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">UniNest Admin</div>
+      <div class="sidebar-section">Navigation</div>
+      <button class="sidebar-item" onclick="showScreen('screen-admin')"><span class="icon">📊</span> Dashboard</button>
+      <button class="sidebar-item" onclick="showScreen('screen-room-mgmt')"><span class="icon">🏠</span> Room Management</button>
+      <button class="sidebar-item active"><span class="icon">💳</span> Fee Tracking</button>
+      <button class="sidebar-item" onclick="showScreen('screen-home')"><span class="icon">🚪</span> Logout</button>
+      <div class="sidebar-user">
+        <div class="avatar" style="background:linear-gradient(135deg,#b794f4,#63b3ed);">AD</div>
+        <div class="sidebar-user-info"><div class="sidebar-user-name">System Admin</div><div class="sidebar-user-role">Super Admin</div></div>
+      </div>
+    </aside>
+    <main class="dashboard-main">
+      <div class="page-title">Fee & Complaint Tracking</div>
+      <div class="page-subtitle">Full view of fee collection status and complaint resolutions</div>
+
+      <!-- FEE STATS -->
+      <div class="grid-4" style="margin-bottom:1.5rem;">
+        <div class="stat-card blue"><div class="stat-value">৳5.6M</div><div class="stat-label">Total Expected</div></div>
+        <div class="stat-card green"><div class="stat-value">৳4.2M</div><div class="stat-label">Collected</div></div>
+        <div class="stat-card pink"><div class="stat-value">৳1.4M</div><div class="stat-label">Outstanding</div></div>
+        <div class="stat-card cyan"><div class="stat-value">75%</div><div class="stat-label">Collection Rate</div></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:1.5rem;">
+        <!-- FEE TABLE -->
+        <div class="table-wrapper">
+          <div class="table-header"><div class="section-title">Student Fee Records</div><button class="btn btn-primary btn-sm">Export CSV</button></div>
+          <table class="data-table">
+            <thead><tr><th>Student</th><th>Room</th><th>Amount</th><th>Due Date</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td>Nadia Sultana</td><td>A-204</td><td>৳6,000</td><td>Feb 1</td><td><span class="badge badge-paid">Paid</span></td><td><button class="btn btn-secondary btn-sm">Receipt</button></td></tr>
+              <tr><td>Rahim Khan</td><td>B-110</td><td>৳8,000</td><td>Feb 1</td><td><span class="badge badge-paid">Paid</span></td><td><button class="btn btn-secondary btn-sm">Receipt</button></td></tr>
+              <tr><td>Sara Khan</td><td>B-205</td><td>৳6,000</td><td>Feb 1</td><td><span class="badge badge-unpaid">Unpaid</span></td><td><button class="btn btn-danger btn-sm" onclick="showToast('Payment reminder sent!','success')">📩 Remind</button></td></tr>
+              <tr><td>Mihad Ahmed</td><td>C-315</td><td>৳5,000</td><td>Feb 1</td><td><span class="badge badge-unpaid">Unpaid</span></td><td><button class="btn btn-danger btn-sm" onclick="showToast('Payment reminder sent!','success')">📩 Remind</button></td></tr>
+              <tr><td>Aryan Hossain</td><td>—</td><td>৳6,000</td><td>Pending</td><td><span class="badge badge-pending">Not Due</span></td><td><span style="color:var(--text-muted);font-size:0.78rem;">Room pending</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- COMPLAINT TABLE -->
+        <div class="table-wrapper">
+          <div class="table-header"><div class="section-title">Complaint Tracker</div></div>
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Issue</th><th>Room</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-blue);">#C01</code></td><td>Broken fan</td><td>A-204</td><td><span style="color:var(--warning);font-size:0.78rem;">Medium</span></td><td><span class="badge badge-open">Open</span></td><td><button class="btn btn-success btn-sm" onclick="showToast('Resolved!','success')">✓</button></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-blue);">#C02</code></td><td>Leaking tap</td><td>B-312</td><td><span style="color:var(--danger);font-size:0.78rem;">High</span></td><td><span class="badge badge-open">Open</span></td><td><button class="btn btn-success btn-sm" onclick="showToast('Resolved!','success')">✓</button></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-blue);">#C03</code></td><td>WiFi outage</td><td>C-All</td><td><span style="color:var(--danger);font-size:0.78rem;">Urgent</span></td><td><span class="badge badge-open">Open</span></td><td><button class="btn btn-success btn-sm" onclick="showToast('Resolved!','success')">✓</button></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-blue);">#C04</code></td><td>Bulb out</td><td>A-Corr</td><td><span style="color:var(--success);font-size:0.78rem;">Low</span></td><td><span class="badge badge-resolved">Resolved</span></td><td><span style="color:var(--text-muted);font-size:0.78rem;">Closed</span></td></tr>
+              <tr><td><code style="font-family:var(--font-mono);font-size:0.75rem;color:var(--neon-blue);">#C05</code></td><td>Door lock broken</td><td>B-205</td><td><span style="color:var(--warning);font-size:0.78rem;">Medium</span></td><td><span class="badge badge-resolved">Resolved</span></td><td><span style="color:var(--text-muted);font-size:0.78rem;">Closed</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- PROGRESS SUMMARY -->
+      <div class="glass-card" style="padding:1.5rem;">
+        <div class="section-title" style="margin-bottom:1.25rem;">Block-wise Collection Progress</div>
+        <div style="display:flex;flex-direction:column;gap:1rem;">
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:0.35rem;font-size:0.85rem;"><span>Block A (Male)</span><span style="color:var(--neon-blue);font-family:var(--font-mono);">৳1.8M / ৳2.1M</span></div><div class="progress-bar"><div class="progress-fill" style="width:86%;"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:0.35rem;font-size:0.85rem;"><span>Block B (Female)</span><span style="color:var(--neon-purple);font-family:var(--font-mono);">৳1.4M / ৳2.0M</span></div><div class="progress-bar"><div class="progress-fill" style="width:70%;background:linear-gradient(90deg,#b794f4,#63b3ed);"></div></div></div>
+          <div><div style="display:flex;justify-content:space-between;margin-bottom:0.35rem;font-size:0.85rem;"><span>Block C (Mixed)</span><span style="color:var(--neon-cyan);font-family:var(--font-mono);">৳1.0M / ৳1.5M</span></div><div class="progress-bar"><div class="progress-fill" style="width:67%;background:linear-gradient(90deg,#76e4f7,#63b3ed);"></div></div></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ============================
+     MODALS
+     ============================ -->
+
+<!-- ADD ROOM MODAL -->
+<div class="modal-overlay" id="modal-add-room">
+  <div class="modal">
+    <div class="modal-title">🏠 Add New Room</div>
+    <div style="display:flex;flex-direction:column;gap:0.9rem;">
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Room Number</label><input class="form-input" placeholder="e.g. A-401"></div>
+        <div class="form-group"><label class="form-label">Block</label><select class="form-input"><option>Block A (Male)</option><option>Block B (Female)</option><option>Block C (Mixed)</option></select></div>
+      </div>
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">Floor</label><select class="form-input"><option>Ground</option><option>1st</option><option>2nd</option><option>3rd</option><option>4th</option></select></div>
+        <div class="form-group"><label class="form-label">Room Type</label><select class="form-input"><option>Single (1 seat)</option><option>Double (2 seats)</option><option>Triple (3 seats)</option><option>Quad (4 seats)</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">Semester Fee (৳)</label><input class="form-input" type="number" placeholder="e.g. 6000"></div>
+      <div class="form-group"><label class="form-label">Amenities</label>
+        <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:0.25rem;">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer;"><input type="checkbox" style="accent-color:var(--neon-blue);"> AC</label>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer;"><input type="checkbox" style="accent-color:var(--neon-blue);"> Attached Bath</label>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer;"><input type="checkbox" style="accent-color:var(--neon-blue);"> WiFi</label>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-size:0.85rem;cursor:pointer;"><input type="checkbox" checked style="accent-color:var(--neon-blue);"> Study Desk</label>
+        </div>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" rows="2" placeholder="Any additional notes..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-room')">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-add-room');showToast('Room added successfully!','success')">Add Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD STUDENT MODAL -->
+<div class="modal-overlay" id="modal-add-student">
+  <div class="modal">
+    <div class="modal-title">👤 Add New Student</div>
+    <div style="display:flex;flex-direction:column;gap:0.9rem;">
+      <div class="grid-2">
+        <div class="form-group"><label class="form-label">First Name</label><input class="form-input" placeholder="First name"></div>
+        <div class="form-group"><label class="form-label">Last Name</label><input class="form-input" placeholder="Last name"></div>
+      </div>
+      <div class="form-group"><label class="form-label">Student ID</label><input class="form-input" placeholder="2024-CS-000"></div>
+      <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" placeholder="student@uni.edu"></div>
+      <div class="form-group"><label class="form-label">Department</label><select class="form-input"><option>Computer Science</option><option>Electrical Engineering</option><option>Mechanical Engineering</option></select></div>
+      <div class="form-group"><label class="form-label">Year</label><select class="form-input"><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option></select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-add-student')">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-add-student');showToast('Student record created!','success')">Add Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- ALLOCATE ROOM MODAL -->
+<div class="modal-overlay" id="modal-allocate">
+  <div class="modal">
+    <div class="modal-title">🗺️ Allocate Room to Student</div>
+    <div style="display:flex;flex-direction:column;gap:0.9rem;">
+      <div class="form-group"><label class="form-label">Select Student (Approved)</label><select class="form-input"><option>Nadia Sultana — #HMS-2025-0044</option><option>Aryan Hossain — #HMS-2025-0045</option></select></div>
+      <div class="form-group"><label class="form-label">Select Room</label><select class="form-input"><option>A-312 (Triple — 2 seats available)</option><option>B-205 (Double — 1 seat available)</option><option>C-315 (Triple — 1 seat available)</option></select></div>
+      <div class="form-group"><label class="form-label">Allocation Date</label><input class="form-input" type="date" value="2025-01-20"></div>
+      <div class="form-group"><label class="form-label">Semester</label><select class="form-input"><option>Spring 2025</option><option>Fall 2025</option></select></div>
+      <div class="info-box">Student will be notified by email once the room is allocated. Fee payment link will be sent automatically.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('modal-allocate')">Cancel</button>
+      <button class="btn btn-primary" onclick="closeModal('modal-allocate');showToast('Room allocated successfully!','success')">Allocate Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">
+  <span id="toast-icon">ℹ️</span>
+  <span id="toast-msg">Notification message</span>
+</div>
+
+<style>
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.1)} }
+</style>
+
+<script>
+// ===== ROOM DATA =====
+const rooms = [
+  { no:'A-101', block:'Block A', type:'Single', floor:'1st', capacity:1, occupied:1, fee:8000, amenities:['Study Desk','WiFi'], emoji:'🛏️' },
+  { no:'A-204', block:'Block A', type:'Double', floor:'2nd', capacity:2, occupied:2, fee:6000, amenities:['Study Desk','WiFi','AC'], emoji:'🛋️' },
+  { no:'A-312', block:'Block A', type:'Triple', floor:'3rd', capacity:3, occupied:1, fee:5000, amenities:['Study Desk','WiFi'], emoji:'🏠' },
+  { no:'B-110', block:'Block B', type:'Single', floor:'1st', capacity:1, occupied:1, fee:8000, amenities:['Study Desk','WiFi','Attached Bath'], emoji:'🛏️' },
+  { no:'B-205', block:'Block B', type:'Double', floor:'2nd', capacity:2, occupied:1, fee:6000, amenities:['Study Desk','WiFi'], emoji:'🛋️' },
+  { no:'B-318', block:'Block B', type:'Triple', floor:'3rd', capacity:3, occupied:0, fee:5000, amenities:['Study Desk','WiFi'], emoji:'🏠' },
+  { no:'C-102', block:'Block C', type:'Double', floor:'1st', capacity:2, occupied:0, fee:6000, amenities:['Study Desk','WiFi','AC'], emoji:'🛋️' },
+  { no:'C-315', block:'Block C', type:'Triple', floor:'3rd', capacity:3, occupied:2, fee:5000, amenities:['Study Desk','WiFi'], emoji:'🏠' },
+  { no:'C-401', block:'Block C', type:'Quad', floor:'4th', capacity:4, occupied:4, fee:4000, amenities:['Study Desk','WiFi'], emoji:'🏘️' },
+];
+
+function renderRooms() {
+  const grid = document.getElementById('room-grid');
+  if (!grid) return;
+  grid.innerHTML = rooms.map(r => {
+    const avail = r.capacity - r.occupied;
+    const full = avail === 0;
+    const statusClass = full ? 'badge-full' : 'badge-available';
+    const statusText = full ? 'Full' : `${avail} seat${avail>1?'s':''} free`;
+    const tagClass = r.type==='Single'?'tag-blue':r.type==='Double'?'tag-purple':r.type==='Triple'?'tag-cyan':'tag-blue';
+    const seats = Array.from({length:r.capacity}, (_,i) =>
+      `<div class="seat-dot ${i < r.occupied ? 'taken':'open'}"></div>`).join('');
+    const amenTags = r.amenities.slice(0,3).map(a=>`<span class="tag tag-blue" style="font-size:0.7rem;">${a}</span>`).join('');
+    return `<div class="room-card" onclick="showScreen('screen-auth')">
+      <div class="room-card-img">
+        <span>${r.emoji}</span>
+        <span class="badge ${statusClass} type-badge">${statusText}</span>
+      </div>
+      <div class="room-card-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div class="room-number">${r.no}</div>
+          <span class="tag ${tagClass}">${r.type}</span>
+        </div>
+        <div style="font-size:0.78rem;color:var(--text-secondary);">${r.block} · ${r.floor} Floor</div>
+        <div class="seat-indicator">${seats}</div>
+        <div style="font-size:0.78rem;color:var(--text-secondary);margin-top:0.3rem;">${r.occupied}/${r.capacity} seats occupied</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.6rem;">
+          <div class="room-meta">${amenTags}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.75rem;padding-top:0.6rem;border-top:1px solid var(--glass-border);">
+          <span style="font-family:var(--font-mono);font-size:0.85rem;color:var(--neon-green);font-weight:700;">৳${r.fee.toLocaleString()}/sem</span>
+          ${!full?`<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();showScreen('screen-auth')">Apply</button>`:`<span style="font-size:0.75rem;color:var(--text-muted);">No seats</span>`}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== MINI CHART =====
+function renderMiniChart() {
+  const el = document.getElementById('mini-chart');
+  if (!el) return;
+  const vals = [55, 62, 68, 71, 69, 75];
+  const max = Math.max(...vals);
+  el.innerHTML = vals.map((v, i) =>
+    `<div class="mini-bar ${i===vals.length-1?'highlight':''}" style="height:${(v/max)*100}%;" title="${v}%"></div>`
+  ).join('');
+}
+
+// ===== SCREEN NAVIGATION =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+  if (id === 'screen-rooms') renderRooms();
+  if (id === 'screen-admin') { renderMiniChart(); showAdminTab('overview'); }
+  if (id === 'screen-student') showStudentTab('overview');
+}
+
+// ===== AUTH =====
+let authTab = 'login';
+function switchAuthTab(tab) {
+  authTab = tab;
+  ['login','register','admin'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===tab);
+    const form = document.getElementById('form-'+t);
+    if (form) {
+      form.style.display = (t===tab) ? (t==='register'?'flex':'flex') : 'none';
+    }
+  });
+}
+
+function loginStudent() { showScreen('screen-student'); showToast('Welcome back, Aryan! 👋','success'); }
+function loginAdmin() { showScreen('screen-admin'); showToast('Admin access granted.','success'); }
+function registerStudent() { switchAuthTab('login'); showToast('Account created! Please sign in.','success'); }
+
+// ===== TABS =====
+function showStudentTab(tab) {
+  document.querySelectorAll('.student-tab').forEach(t => t.style.display='none');
+  const el = document.getElementById('student-'+tab);
+  if(el) { el.style.display='block'; el.style.animation='fadeInScreen 0.3s ease'; }
+  document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+  const map = {overview:0,application:3,room:4,payments:5,complaints:6};
+  const sidebar = document.querySelectorAll('#screen-student .sidebar-item');
+  if(sidebar[map[tab]]) sidebar[map[tab]].classList.add('active');
+}
+
+function showAdminTab(tab) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.style.display='none');
+  const el = document.getElementById('admin-'+tab);
+  if(el) { el.style.display='block'; el.style.animation='fadeInScreen 0.3s ease'; }
+  document.querySelectorAll('#screen-admin .sidebar-item').forEach(i => i.classList.remove('active'));
+  const map = {overview:0,students:2,applications:3,allocations:4,complaints:6,reports:7};
+  const sidebar = document.querySelectorAll('#screen-admin .sidebar-item');
+  if(sidebar[map[tab]]) sidebar[map[tab]].classList.add('active');
+  if(tab==='overview') setTimeout(renderMiniChart, 100);
+}
+
+// ===== APPLICATION STEPS =====
+let currentStep = 1;
+function nextStep() {
+  if (currentStep < 3) {
+    document.getElementById('apply-step-'+currentStep).style.display = 'none';
+    currentStep++;
+    const el = document.getElementById('apply-step-'+currentStep);
+    el.style.display = 'block';
+    el.style.animation = 'fadeInScreen 0.3s ease';
+    activateStep(currentStep);
+  }
+}
+function prevStep() {
+  if (currentStep > 1) {
+    document.getElementById('apply-step-'+currentStep).style.display = 'none';
+    currentStep--;
+    document.getElementById('apply-step-'+currentStep).style.display = 'block';
+    activateStep(currentStep);
+  }
+}
+function activateStep(n) {
+  for(let i=1;i<=3;i++){
+    const num = document.getElementById('step'+i+'-num');
+    const lbl = document.getElementById('step'+i+'-label');
+    if(num && lbl) {
+      if(i < n) {
+        num.style.background='linear-gradient(135deg,#63b3ed,#b794f4)';
+        num.style.color='#fff';
+        num.style.border='none';
+        num.textContent='✓';
+        lbl.style.color='var(--text-secondary)';
+      } else if(i===n) {
+        num.style.background='linear-gradient(135deg,#63b3ed,#b794f4)';
+        num.style.color='#fff';
+        num.style.border='none';
+        num.textContent=i;
+        lbl.style.color='var(--neon-blue)';
+      } else {
+        num.style.background='rgba(255,255,255,0.08)';
+        num.style.color='var(--text-secondary)';
+        num.style.border='1px solid var(--glass-border)';
+        num.textContent=i;
+        lbl.style.color='var(--text-secondary)';
+      }
+    }
+  }
+}
+function submitApplication() {
+  const check = document.getElementById('agree-check');
+  if(!check.checked) { showToast('Please agree to the terms.','error'); return; }
+  showScreen('screen-student');
+  currentStep=1;
+  ['apply-step-1','apply-step-2','apply-step-3'].forEach((id,idx)=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display=idx===0?'block':'none';
+  });
+  activateStep(1);
+  showToast('Application submitted! ID: HMS-2025-0046 ✓','success');
+}
+
+// ===== MODAL =====
+function openModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('show'); });
+});
+
+// ===== TOAST =====
+let toastTimer;
+function showToast(msg, type='info') {
+  const toast = document.getElementById('toast');
+  const icons = {info:'ℹ️',success:'✅',error:'❌'};
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = icons[type]||'ℹ️';
+  toast.className = 'show '+(type||'');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>toast.className='', 3500);
+}
+
+// ===== INIT =====
+window.addEventListener('DOMContentLoaded', () => {
+  renderRooms();
+  // Stagger hero stat animations
+  document.querySelectorAll('.hero-stat-val').forEach((el, i) => {
+    el.style.opacity='0';
+    el.style.transform='translateY(12px)';
+    el.style.transition='all 0.5s ease';
+    setTimeout(() => {
+      el.style.opacity='1';
+      el.style.transform='translateY(0)';
+    }, 600 + i*120);
+  });
+});
+</script>
+</body>
+</html>
+
+
