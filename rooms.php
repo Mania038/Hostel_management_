@@ -1,323 +1,154 @@
 <?php
-// admin/rooms.php — Full CRUD for rooms
+// student/rooms.php  (public — no login required)
 require_once __DIR__ . '/../config/db.php';
-require_admin();
+session_start_safe();
 
-$action = $_GET['action'] ?? '';
-$msg    = '';
+$block  = $_GET['block']  ?? '';
+$type   = $_GET['type']   ?? '';
+$avail  = $_GET['avail']  ?? '';
 
-// ── DELETE ────────────────────────────────────────────────
-if ($action === 'delete' && isset($_GET['id'])) {
-    $id  = (int)$_GET['id'];
-    $chk = db_row($conn, "SELECT occupied FROM rooms WHERE id=?", 'i', $id);
-    if ($chk && $chk['occupied'] > 0) {
-        flash('error', 'Cannot delete a room with students currently assigned.');
-    } else {
-        db_exec($conn, "DELETE FROM rooms WHERE id=?", 'i', $id);
-        flash('success', 'Room deleted successfully.');
-    }
-    redirect(APP_URL . '/admin/rooms.php');
-}
+$where = ["r.status='available'"];
+$params = []; $types = '';
 
-// ── ADD ───────────────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === 'add') {
-    $rn    = clean($_POST['room_number'] ?? '');
-    $blk   = $_POST['block']     ?? '';
-    $fl    = (int)($_POST['floor'] ?? 1);
-    $rtype = $_POST['room_type'] ?? '';
-    $fee   = (float)($_POST['fee'] ?? 0);
-    $desc  = clean($_POST['description'] ?? '');
-    $ac    = isset($_POST['has_ac'])   ? 1 : 0;
-    $bath  = isset($_POST['has_bath']) ? 1 : 0;
-    $wifi  = isset($_POST['has_wifi']) ? 1 : 0;
-    $desk  = isset($_POST['has_desk']) ? 1 : 0;
-    $cap_map = ['single'=>1,'double'=>2,'triple'=>3,'quad'=>4];
-    $cap   = $cap_map[$rtype] ?? 1;
-    $bg    = ['A'=>'male','B'=>'female','C'=>'mixed'];
-    $bg_v  = $bg[$blk] ?? 'male';
+if (in_array($block, ['A','B','C']))                               { $where[] = "r.block=?";     $params[]=$block; $types.='s'; }
+if (in_array($type,  ['single','double','triple','quad']))          { $where[] = "r.room_type=?"; $params[]=$type;  $types.='s'; }
+if ($avail === '1')                                                 { $where[] = "r.occupied < r.capacity"; }
+elseif ($avail === '0')                                             { $where[] = "r.occupied >= r.capacity"; }
 
-    if (!$rn || !in_array($blk,['A','B','C']) || !in_array($rtype,array_keys($cap_map)) || $fee <= 0) {
-        flash('error', 'Please fill all required fields correctly.');
-    } else {
-        $dup = db_row($conn,"SELECT id FROM rooms WHERE room_number=?",'s',$rn);
-        if ($dup) { flash('error', "Room number {$rn} already exists."); }
-        else {
-            db_insert($conn,
-                "INSERT INTO rooms (room_number,block,block_gender,floor,room_type,capacity,fee_per_sem,has_ac,has_attached_bath,has_wifi,has_study_desk,description)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-                'sssisidiiis', $rn, $blk, $bg_v, $fl, $rtype, $cap, $fee, $ac, $bath, $wifi, $desk, $desc
-            );
-            flash('success', "Room {$rn} added successfully.");
-        }
-    }
-    redirect(APP_URL . '/admin/rooms.php');
-}
+$sql = "SELECT r.*, (r.capacity-r.occupied) AS free_seats FROM rooms r WHERE " . implode(' AND ', $where) . " ORDER BY r.block, r.floor, r.room_number";
+$rooms = db_query($conn, $sql, $types, ...$params);
 
-// ── EDIT / UPDATE ─────────────────────────────────────────
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['form_action'] ?? '') === 'edit') {
-    $id    = (int)$_POST['room_id'];
-    $fee   = (float)$_POST['fee'];
-    $desc  = clean($_POST['description'] ?? '');
-    $status= $_POST['status'] ?? 'available';
-    $ac    = isset($_POST['has_ac'])   ? 1 : 0;
-    $bath  = isset($_POST['has_bath']) ? 1 : 0;
-    $wifi  = isset($_POST['has_wifi']) ? 1 : 0;
-    $desk  = isset($_POST['has_desk']) ? 1 : 0;
-    $allowed_status = ['available','maintenance','closed'];
-    if (!in_array($status, $allowed_status)) $status = 'available';
-    db_exec($conn,
-        "UPDATE rooms SET fee_per_sem=?,has_ac=?,has_attached_bath=?,has_wifi=?,has_study_desk=?,description=?,status=? WHERE id=?",
-        'diiiissi', $fee, $ac, $bath, $wifi, $desk, $desc, $status, $id
-    );
-    flash('success', 'Room updated successfully.');
-    redirect(APP_URL . '/admin/rooms.php');
-}
+// Summary
+$stats = db_row($conn, "SELECT SUM(capacity) AS total_seats, SUM(occupied) AS total_occ, SUM(capacity-occupied) AS total_free, COUNT(*) AS total_rooms FROM rooms WHERE status='available'");
 
-// Fetch edit room if needed
-$edit_room = null;
-if ($action === 'edit' && isset($_GET['id'])) {
-    $edit_room = db_row($conn, "SELECT * FROM rooms WHERE id=?", 'i', (int)$_GET['id']);
-}
-
-// Filters
-$fblk  = $_GET['block']   ?? '';
-$ftype = $_GET['type']    ?? '';
-$fstat = $_GET['status']  ?? '';
-$where = ['1=1']; $ptypes=''; $pvals=[];
-if (in_array($fblk,  ['A','B','C']))                           { $where[]="block=?";     $ptypes.='s'; $pvals[]=$fblk; }
-if (in_array($ftype, ['single','double','triple','quad']))      { $where[]="room_type=?"; $ptypes.='s'; $pvals[]=$ftype; }
-if (in_array($fstat, ['available','maintenance','closed']))     { $where[]="status=?";    $ptypes.='s'; $pvals[]=$fstat; }
-
-$rooms = db_query($conn, "SELECT * FROM rooms WHERE ".implode(' AND ',$where)." ORDER BY block,floor,room_number", $ptypes, ...$pvals);
-$stats_row = db_row($conn,"SELECT COUNT(*) AS tr, SUM(capacity) AS ts, SUM(occupied) AS to2, SUM(capacity-occupied) AS tf FROM rooms");
-
-$page_title = 'Room Management';
+$page_title = 'Room Availability';
+$is_logged  = !empty($_SESSION['student_id']);
 require_once __DIR__ . '/../includes/header.php';
 ?>
 <style>
-.modal-bg{display:none;position:fixed;inset:0;background:rgba(5,8,16,.8);backdrop-filter:blur(8px);z-index:500;align-items:center;justify-content:center;}
-.modal-bg.open{display:flex;}
-.modal-box{background:#0d1117;border:1px solid var(--gb);border-radius:24px;padding:2rem;width:100%;max-width:500px;animation:mIn .3s ease;max-height:90vh;overflow-y:auto;}
-@keyframes mIn{from{opacity:0;transform:scale(.95) translateY(-10px)}to{opacity:1;transform:scale(1) translateY(0)}}
-.modal-title{font-family:var(--fd);font-size:1.1rem;font-weight:700;margin-bottom:1.1rem;padding-bottom:.7rem;border-bottom:1px solid var(--gb);}
-.modal-footer{display:flex;gap:.7rem;justify-content:flex-end;margin-top:1.4rem;}
+.room-card{background:var(--card);border:1px solid var(--gb);border-radius:var(--r3);overflow:hidden;transition:all .3s;}
+.room-card:hover{transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.4);border-color:rgba(99,179,237,.25);}
+.room-img{height:110px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;position:relative;}
+.room-img.A{background:linear-gradient(135deg,rgba(99,179,237,.15),rgba(183,148,244,.15));}
+.room-img.B{background:linear-gradient(135deg,rgba(246,135,179,.12),rgba(183,148,244,.12));}
+.room-img.C{background:linear-gradient(135deg,rgba(118,228,247,.12),rgba(104,211,145,.1));}
+.room-body{padding:.95rem 1.05rem 1.05rem;}
+.seat-dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--gb);}
+.seat-taken{background:rgba(252,129,129,.7);border-color:rgba(252,129,129,.4);}
+.seat-open{background:rgba(104,211,145,.7);border-color:rgba(104,211,145,.4);}
 </style>
+
 <nav class="navbar">
-  <a class="nav-logo" href="<?= APP_URL ?>">UniNest Admin</a>
+  <a class="nav-logo" href="<?= APP_URL ?>">UniNest</a>
   <div class="nav-links">
-    <span style="font-size:.82rem;color:var(--ts);">👤 <?= clean($_SESSION['admin_name']) ?></span>
-    <a class="nav-link" href="<?= APP_URL ?>/auth/logout.php">Logout</a>
+    <a class="nav-link" href="<?= APP_URL ?>">Home</a>
+    <a class="nav-link active" href="rooms.php">Rooms</a>
+    <?php if($is_logged): ?>
+      <a class="nav-link" href="dashboard.php">Dashboard</a>
+      <a class="nav-link" href="<?= APP_URL ?>/auth/logout.php">Logout</a>
+    <?php else: ?>
+      <a class="nav-link" href="<?= APP_URL ?>/auth/login.php">Login</a>
+      <a class="nav-btn" href="<?= APP_URL ?>/auth/register.php">Register</a>
+    <?php endif; ?>
   </div>
 </nav>
-<div class="sidebar-layout">
-  <?php require_once __DIR__ . '/../includes/admin_sidebar.php'; ?>
-  <main class="dash-main">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:.3rem;">
-      <div class="page-title" style="margin:0;">Room Management</div>
-      <button class="btn btn-primary" onclick="document.getElementById('modal-add').classList.add('open')">+ Add Room</button>
-    </div>
-    <div class="page-sub">Add, edit, and manage all hostel rooms</div>
 
-    <!-- STATS -->
-    <div class="g4" style="margin-bottom:1.3rem;">
-      <div class="stat-card blue"><div class="stat-val"><?= $stats_row['tr'] ?></div><div class="stat-label">Total Rooms</div></div>
-      <div class="stat-card cyan"><div class="stat-val"><?= $stats_row['ts'] ?></div><div class="stat-label">Total Seats</div></div>
-      <div class="stat-card green"><div class="stat-val"><?= $stats_row['tf'] ?></div><div class="stat-label">Available Seats</div></div>
-      <div class="stat-card purple"><div class="stat-val"><?= $stats_row['to2'] ?></div><div class="stat-label">Occupied</div></div>
-    </div>
-
-    <!-- FILTERS -->
-    <div class="glass" style="padding:1rem;margin-bottom:1.2rem;">
-      <form method="GET" style="display:flex;gap:.75rem;flex-wrap:wrap;align-items:flex-end;">
-        <div class="form-group" style="flex:1;min-width:130px;">
-          <label class="form-label">Block</label>
-          <select class="form-input" name="block">
-            <option value="">All</option>
-            <option value="A" <?= $fblk==='A'?'selected':'' ?>>Block A</option>
-            <option value="B" <?= $fblk==='B'?'selected':'' ?>>Block B</option>
-            <option value="C" <?= $fblk==='C'?'selected':'' ?>>Block C</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex:1;min-width:130px;">
-          <label class="form-label">Room Type</label>
-          <select class="form-input" name="type">
-            <option value="">All</option>
-            <option value="single" <?= $ftype==='single'?'selected':'' ?>>Single</option>
-            <option value="double" <?= $ftype==='double'?'selected':'' ?>>Double</option>
-            <option value="triple" <?= $ftype==='triple'?'selected':'' ?>>Triple</option>
-            <option value="quad"   <?= $ftype==='quad'?'selected':'' ?>>Quad</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex:1;min-width:130px;">
-          <label class="form-label">Status</label>
-          <select class="form-input" name="status">
-            <option value="">All</option>
-            <option value="available"   <?= $fstat==='available'?'selected':'' ?>>Available</option>
-            <option value="maintenance" <?= $fstat==='maintenance'?'selected':'' ?>>Maintenance</option>
-            <option value="closed"      <?= $fstat==='closed'?'selected':'' ?>>Closed</option>
-          </select>
-        </div>
-        <button class="btn btn-primary btn-sm" type="submit" style="height:42px;">Filter</button>
-        <a class="btn btn-secondary btn-sm" href="rooms.php" style="height:42px;">Reset</a>
-      </form>
-    </div>
-
-    <!-- TABLE -->
-    <div class="table-wrapper">
-      <div class="table-header">
-        <div class="table-title">All Rooms (<?= count($rooms) ?>)</div>
-      </div>
-      <?php if(empty($rooms)): ?>
-        <div style="padding:2.5rem;text-align:center;opacity:.55;"><div style="font-size:2rem;">🏠</div><div style="margin-top:.5rem;font-size:.875rem;color:var(--ts);">No rooms found.</div></div>
-      <?php else: ?>
-      <div style="overflow-x:auto;">
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Room No.</th><th>Block</th><th>Floor</th><th>Type</th>
-            <th>Capacity</th><th>Occupied</th><th>Free</th>
-            <th>Fee/Sem</th><th>Amenities</th><th>Status</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <?php foreach($rooms as $r):
-            $free = $r['capacity'] - $r['occupied'];
-            $occ_pct = $r['capacity'] > 0 ? round($r['occupied']/$r['capacity']*100) : 0;
-          ?>
-          <tr>
-            <td><strong><?= clean($r['room_number']) ?></strong></td>
-            <td>Block <?= $r['block'] ?></td>
-            <td><?= $r['floor'] ?></td>
-            <td><span class="tag tag-<?= ['single'=>'blue','double'=>'purple','triple'=>'cyan','quad'=>'blue'][$r['room_type']] ?>"><?= ucfirst($r['room_type']) ?></span></td>
-            <td><?= $r['capacity'] ?></td>
-            <td>
-              <div><?= $r['occupied'] ?></div>
-              <div class="progress-bar" style="width:60px;"><div class="progress-fill" style="width:<?= $occ_pct ?>%;"></div></div>
-            </td>
-            <td style="color:<?= $free>0?'var(--success)':'var(--danger)' ?>;font-weight:600;"><?= $free ?></td>
-            <td style="font-family:var(--fm);color:var(--green);">৳<?= number_format($r['fee_per_sem'],0) ?></td>
-            <td style="font-size:.78rem;">
-              <?= $r['has_wifi']?'📶 ':'— ' ?>
-              <?= $r['has_ac']?'❄️ ':'' ?>
-              <?= $r['has_attached_bath']?'🚿 ':'' ?>
-              <?= $r['has_study_desk']?'📚':'' ?>
-            </td>
-            <td>
-              <span class="badge badge-<?= $r['status']==='available'?'available':($r['status']==='maintenance'?'pending':'rejected') ?>">
-                <?= ucfirst($r['status']) ?>
-              </span>
-            </td>
-            <td>
-              <div style="display:flex;gap:4px;">
-                <a class="btn btn-secondary btn-sm" href="rooms.php?action=edit&id=<?= $r['id'] ?>">✏️ Edit</a>
-                <?php if($r['occupied']==0): ?>
-                  <a class="btn btn-danger btn-sm"
-                     href="rooms.php?action=delete&id=<?= $r['id'] ?>"
-                     onclick="return confirm('Delete room <?= $r['room_number'] ?>?')">🗑️</a>
-                <?php endif; ?>
-              </div>
-            </td>
-          </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-      </div>
-      <?php endif; ?>
-    </div>
-  </main>
-</div>
-
-<!-- ADD ROOM MODAL -->
-<div class="modal-bg" id="modal-add">
-  <div class="modal-box">
-    <div class="modal-title">🏠 Add New Room</div>
-    <form method="POST" style="display:flex;flex-direction:column;gap:.85rem;">
-      <input type="hidden" name="form_action" value="add">
-      <div class="g2">
-        <div class="form-group"><label class="form-label">Room Number *</label><input class="form-input" name="room_number" placeholder="e.g. A-401" required></div>
-        <div class="form-group"><label class="form-label">Block *</label>
-          <select class="form-input" name="block" required>
-            <option value="">Select</option>
-            <option value="A">Block A (Male)</option>
-            <option value="B">Block B (Female)</option>
-            <option value="C">Block C (Mixed)</option>
-          </select>
-        </div>
-      </div>
-      <div class="g2">
-        <div class="form-group"><label class="form-label">Floor *</label>
-          <select class="form-input" name="floor" required>
-            <option value="1">Ground/1st Floor</option>
-            <option value="2">2nd Floor</option>
-            <option value="3">3rd Floor</option>
-            <option value="4">4th Floor</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Room Type *</label>
-          <select class="form-input" name="room_type" required>
-            <option value="">Select</option>
-            <option value="single">Single (1 seat)</option>
-            <option value="double">Double (2 seats)</option>
-            <option value="triple">Triple (3 seats)</option>
-            <option value="quad">Quad (4 seats)</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group"><label class="form-label">Semester Fee (৳) *</label><input class="form-input" type="number" name="fee" min="1000" step="500" placeholder="e.g. 6000" required></div>
-      <div style="display:flex;gap:1.2rem;flex-wrap:wrap;">
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_wifi" checked style="accent-color:var(--blue);"> WiFi</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_desk" checked style="accent-color:var(--blue);"> Study Desk</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_ac" style="accent-color:var(--blue);"> AC</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_bath" style="accent-color:var(--blue);"> Attached Bath</label>
-      </div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" name="description" rows="2" placeholder="Optional notes…"></textarea></div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('modal-add').classList.remove('open')">Cancel</button>
-        <button type="submit" class="btn btn-primary">Add Room</button>
-      </div>
-    </form>
+<div style="max-width:1200px;margin:0 auto;padding:2rem;">
+  <div style="margin-bottom:2rem;">
+    <h1 style="font-family:var(--fd);font-size:2rem;font-weight:800;margin-bottom:.2rem;">Room Availability</h1>
+    <p style="color:var(--ts);">Browse all hostel rooms and check real-time seat availability</p>
   </div>
-</div>
 
-<!-- EDIT ROOM MODAL (auto-opens if editing) -->
-<?php if($edit_room): ?>
-<div class="modal-bg open" id="modal-edit">
-  <div class="modal-box">
-    <div class="modal-title">✏️ Edit Room — <?= clean($edit_room['room_number']) ?></div>
-    <form method="POST" style="display:flex;flex-direction:column;gap:.85rem;">
-      <input type="hidden" name="form_action" value="edit">
-      <input type="hidden" name="room_id" value="<?= $edit_room['id'] ?>">
-      <div class="g2">
-        <div class="form-group"><label class="form-label">Room Number</label><input class="form-input" value="<?= clean($edit_room['room_number']) ?>" readonly></div>
-        <div class="form-group"><label class="form-label">Type</label><input class="form-input" value="<?= ucfirst($edit_room['room_type']) ?>" readonly></div>
-      </div>
-      <div class="form-group"><label class="form-label">Semester Fee (৳) *</label><input class="form-input" type="number" name="fee" value="<?= $edit_room['fee_per_sem'] ?>" min="1000" step="500" required></div>
-      <div class="form-group"><label class="form-label">Status</label>
-        <select class="form-input" name="status">
-          <option value="available"   <?= $edit_room['status']==='available'?'selected':'' ?>>Available</option>
-          <option value="maintenance" <?= $edit_room['status']==='maintenance'?'selected':'' ?>>Under Maintenance</option>
-          <option value="closed"      <?= $edit_room['status']==='closed'?'selected':'' ?>>Closed</option>
+  <!-- FILTERS -->
+  <div class="glass" style="padding:1.2rem;margin-bottom:1.6rem;">
+    <form method="GET" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:flex-end;">
+      <div class="form-group" style="flex:1;min-width:160px;">
+        <label class="form-label">Block</label>
+        <select class="form-input" name="block">
+          <option value="">All Blocks</option>
+          <option value="A" <?= $block==='A'?'selected':'' ?>>Block A (Male)</option>
+          <option value="B" <?= $block==='B'?'selected':'' ?>>Block B (Female)</option>
+          <option value="C" <?= $block==='C'?'selected':'' ?>>Block C (Mixed)</option>
         </select>
       </div>
-      <div style="display:flex;gap:1.2rem;flex-wrap:wrap;">
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_wifi" <?= $edit_room['has_wifi']?'checked':'' ?> style="accent-color:var(--blue);"> WiFi</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_desk" <?= $edit_room['has_study_desk']?'checked':'' ?> style="accent-color:var(--blue);"> Study Desk</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_ac" <?= $edit_room['has_ac']?'checked':'' ?> style="accent-color:var(--blue);"> AC</label>
-        <label style="display:flex;align-items:center;gap:.4rem;font-size:.875rem;cursor:pointer;"><input type="checkbox" name="has_bath" <?= $edit_room['has_attached_bath']?'checked':'' ?> style="accent-color:var(--blue);"> Attached Bath</label>
+      <div class="form-group" style="flex:1;min-width:160px;">
+        <label class="form-label">Room Type</label>
+        <select class="form-input" name="type">
+          <option value="">All Types</option>
+          <option value="single" <?= $type==='single'?'selected':'' ?>>Single</option>
+          <option value="double" <?= $type==='double'?'selected':'' ?>>Double</option>
+          <option value="triple" <?= $type==='triple'?'selected':'' ?>>Triple</option>
+          <option value="quad"   <?= $type==='quad'?'selected':'' ?>>Quad</option>
+        </select>
       </div>
-      <div class="form-group"><label class="form-label">Description</label><textarea class="form-input" name="description" rows="2"><?= clean($edit_room['description']??'') ?></textarea></div>
-      <div class="modal-footer">
-        <a class="btn btn-secondary" href="rooms.php">Cancel</a>
-        <button type="submit" class="btn btn-primary">Save Changes</button>
+      <div class="form-group" style="flex:1;min-width:160px;">
+        <label class="form-label">Availability</label>
+        <select class="form-input" name="avail">
+          <option value="">All</option>
+          <option value="1" <?= $avail==='1'?'selected':'' ?>>Has Free Seats</option>
+          <option value="0" <?= $avail==='0'?'selected':'' ?>>Fully Occupied</option>
+        </select>
       </div>
+      <button class="btn btn-primary" type="submit" style="height:42px;">🔍 Filter</button>
+      <a class="btn btn-secondary" href="rooms.php" style="height:42px;">✕ Reset</a>
     </form>
   </div>
-</div>
-<?php endif; ?>
 
-<script>
-document.querySelectorAll('.modal-bg').forEach(m=>{
-  m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('open'); });
-});
-</script>
+  <!-- STATS -->
+  <div class="g4" style="margin-bottom:1.6rem;">
+    <div class="stat-card blue"><div class="stat-val"><?= $stats['total_rooms'] ?></div><div class="stat-label">Total Rooms</div></div>
+    <div class="stat-card cyan"><div class="stat-val"><?= $stats['total_seats'] ?></div><div class="stat-label">Total Seats</div></div>
+    <div class="stat-card green"><div class="stat-val"><?= $stats['total_free'] ?></div><div class="stat-label">Available Seats</div></div>
+    <div class="stat-card purple"><div class="stat-val"><?= $stats['total_occ'] ?></div><div class="stat-label">Occupied</div></div>
+  </div>
+
+  <!-- ROOM GRID -->
+  <?php if(empty($rooms)): ?>
+    <div class="glass" style="padding:3rem;text-align:center;opacity:.6;">
+      <div style="font-size:2.5rem;margin-bottom:.75rem;">🔍</div>
+      <div style="font-family:var(--fd);font-size:1rem;font-weight:700;">No rooms found</div>
+      <div style="color:var(--ts);margin-top:.3rem;font-size:.875rem;">Try adjusting your filters.</div>
+    </div>
+  <?php else: ?>
+  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.1rem;">
+    <?php foreach($rooms as $r):
+      $free   = (int)$r['free_seats'];
+      $full   = $free === 0;
+      $emojis = ['single'=>'🛏️','double'=>'🛋️','triple'=>'🏠','quad'=>'🏘️'];
+      $type_tags=['single'=>'tag-blue','double'=>'tag-purple','triple'=>'tag-cyan','quad'=>'tag-blue'];
+      $seats_html=''; for($i=0;$i<$r['capacity'];$i++) $seats_html.='<div class="seat-dot '.($i<$r['occupied']?'seat-taken':'seat-open').'"></div>';
+    ?>
+    <div class="room-card">
+      <div class="room-img <?= $r['block'] ?>">
+        <span><?= $emojis[$r['room_type']] ?? '🏠' ?></span>
+        <span class="badge <?= $full?'badge-full':'badge-available' ?>" style="position:absolute;top:.7rem;right:.7rem;"><?= $full?'Full':"{$free} free" ?></span>
+      </div>
+      <div class="room-body">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.2rem;">
+          <div style="font-family:var(--fd);font-size:1rem;font-weight:700;"><?= $r['room_number'] ?></div>
+          <span class="tag <?= $type_tags[$r['room_type']]??'tag-blue' ?>"><?= ucfirst($r['room_type']) ?></span>
+        </div>
+        <div style="font-size:.78rem;color:var(--ts);margin-bottom:.5rem;">Block <?= $r['block'] ?> · Floor <?= $r['floor'] ?></div>
+        <div style="display:flex;gap:.3rem;margin-bottom:.4rem;"><?= $seats_html ?></div>
+        <div style="font-size:.78rem;color:var(--ts);margin-bottom:.6rem;"><?= $r['occupied'] ?>/<?= $r['capacity'] ?> seats occupied</div>
+        <div style="display:flex;flex-wrap:wrap;gap:.35rem;margin-bottom:.75rem;">
+          <?php if($r['has_wifi']): ?><span class="tag tag-blue" style="font-size:.7rem;">📶 WiFi</span><?php endif; ?>
+          <?php if($r['has_ac']): ?><span class="tag tag-purple" style="font-size:.7rem;">❄️ AC</span><?php endif; ?>
+          <?php if($r['has_attached_bath']): ?><span class="tag tag-cyan" style="font-size:.7rem;">🚿 Bath</span><?php endif; ?>
+          <?php if($r['has_study_desk']): ?><span class="tag tag-blue" style="font-size:.7rem;">📚 Desk</span><?php endif; ?>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding-top:.65rem;border-top:1px solid var(--gb);">
+          <span style="font-family:var(--fm);font-size:.85rem;color:var(--green);font-weight:700;">৳<?= number_format($r['fee_per_sem'],0) ?>/sem</span>
+          <?php if(!$full): ?>
+            <a class="btn btn-primary btn-sm" href="<?= $is_logged?'apply.php':APP_URL.'/auth/login.php' ?>">Apply</a>
+          <?php else: ?>
+            <span style="font-size:.75rem;color:var(--tm);">No seats</span>
+          <?php endif; ?>
+        </div>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+</div>
 </body></html>
