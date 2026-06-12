@@ -15,11 +15,11 @@ $is_admin   = !empty($_SESSION['admin_id']);
 <title><?= htmlspecialchars($page_title) ?> — UniNest HMS</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#050810;--bg2:#090d1a;--card:rgba(255,255,255,.04);--card-h:rgba(255,255,255,.07);--gb:rgba(255,255,255,.08);--gba:rgba(99,179,237,.4);--blue:#63b3ed;--cyan:#76e4f7;--purple:#b794f4;--pink:#f687b3;--green:#68d391;--ag:linear-gradient(135deg,#63b3ed,#b794f4);--tp:#f0f4ff;--ts:#8896b3;--tm:#4a5568;--danger:#fc8181;--success:#68d391;--warning:#f6e05e;--fd:'Syne',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;--r1:8px;--r2:12px;--r3:18px;}
+:root{--bg:rgba(240,241,245,.9);--bg2:#f4f6fb;--card:rgba(255,255,255,.9);--card-h:rgba(255,255,255,.95);--gb:rgba(0,0,0,.08);--gba:rgba(99,179,237,.4);--blue:#63b3ed;--cyan:#76e4f7;--purple:#b794f4;--pink:#f687b3;--green:#68d391;--ag:linear-gradient(135deg,#63b3ed,#b794f4);--tp:#0f172a;--ts:#475569;--tm:#1f2937;--danger:#dc2626;--success:#15803d;--warning:#d97706;--fd:'Syne',sans-serif;--fb:'Inter',sans-serif;--fm:'JetBrains Mono',monospace;--r1:8px;--r2:12px;--r3:18px;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
-body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh;}
+body{font-family:var(--fb);background:var(--bg);color:var(--tm);min-height:100vh;}
 ::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:rgba(99,179,237,.3);border-radius:3px;}
-.navbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;background:rgba(5,8,16,.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--gb);}
+.navbar{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 2rem;height:60px;background:rgba(240, 241, 245, 0.9);backdrop-filter:blur(20px);border-bottom:1px solid var(--gb);}
 .nav-logo{font-family:var(--fd);font-size:1.2rem;font-weight:800;background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-decoration:none;}
 .nav-links{display:flex;gap:.25rem;align-items:center;}
 .nav-link{padding:.4rem .9rem;font-size:.85rem;font-weight:500;color:var(--ts);cursor:pointer;border-radius:var(--r1);transition:all .2s;border:none;background:none;text-decoration:none;display:inline-flex;align-items:center;gap:.4rem;}
@@ -42,7 +42,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--tp);min-height:100vh
 .form-label{font-size:.78rem;font-weight:600;color:var(--ts);letter-spacing:.06em;text-transform:uppercase;}
 .form-input{background:rgba(255,255,255,.05);border:1px solid var(--gb);border-radius:var(--r1);padding:.65rem .9rem;color:var(--tp);font-family:var(--fb);font-size:.9rem;outline:none;transition:all .2s;width:100%;}
 .form-input:focus{border-color:var(--blue);background:rgba(99,179,237,.05);box-shadow:0 0 0 3px rgba(99,179,237,.1);}
-.form-input option{background:#0d1117;}
+.form-input option{background:#fff;color:var(--tm);}
 select.form-input{cursor:pointer;}textarea.form-input{resize:vertical;min-height:80px;}
 .badge{display:inline-flex;align-items:center;gap:.3rem;padding:.22rem .65rem;border-radius:20px;font-size:.73rem;font-weight:600;font-family:var(--fm);}
 .badge::before{content:'';width:5px;height:5px;border-radius:50%;}
@@ -79,7 +79,7 @@ select.form-input{cursor:pointer;}textarea.form-input{resize:vertical;min-height
 .g2{display:grid;grid-template-columns:repeat(2,1fr);gap:1.1rem;}
 .g21{display:grid;grid-template-columns:2fr 1fr;gap:1.1rem;}
 .sidebar-layout{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 60px);}
-.sidebar{background:rgba(9,13,26,.97);border-right:1px solid var(--gb);padding:1.2rem .75rem;display:flex;flex-direction:column;gap:.15rem;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
+.sidebar{background:rgba(223, 227, 242, 0.97);border-right:1px solid var(--gb);padding:1.2rem .75rem;display:flex;flex-direction:column;gap:.15rem;position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;}
 .sidebar-sec{font-size:.68rem;font-weight:700;color:var(--tm);text-transform:uppercase;letter-spacing:.1em;font-family:var(--fm);padding:.7rem .7rem .3rem;}
 .sidebar-item{display:flex;align-items:center;gap:.65rem;padding:.55rem .7rem;border-radius:var(--r1);cursor:pointer;font-size:.85rem;font-weight:500;color:var(--ts);transition:all .2s;border:none;background:none;width:100%;text-align:left;text-decoration:none;}
 .sidebar-item:hover{color:var(--tp);background:rgba(255,255,255,.05);}
@@ -112,10 +112,10 @@ code{font-family:var(--fm);font-size:.8rem;color:var(--blue);}
 </head>
 <body>
 <?php if($flash): ?>
-<div id="flash-msg" style="position:fixed;top:1rem;right:1rem;z-index:9999;background:rgba(9,13,26,.95);border:1px solid var(--gb);border-left:3px solid <?= $flash['type']==='success'?'#68d391':($flash['type']==='error'?'#fc8181':'#63b3ed') ?>;border-radius:12px;padding:.85rem 1.2rem;display:flex;align-items:center;gap:.7rem;font-size:.875rem;max-width:320px;backdrop-filter:blur(20px);animation:slideIn .3s ease;">
+<div id="flash-msg" style="position:fixed;top:1rem;right:1rem;z-index:9999;background:rgba(240,241,245,.96);border:1px solid rgba(15,23,42,.08);border-left:3px solid <?= $flash['type']==='success'?'#68d391':($flash['type']==='error'?'#fc8181':'#63b3ed') ?>;border-radius:12px;padding:.85rem 1.2rem;display:flex;align-items:center;gap:.7rem;font-size:.875rem;max-width:320px;backdrop-filter:blur(20px);animation:slideIn .3s ease;color:#0f172a !important;">
   <span><?= $flash['type']==='success'?'✅':($flash['type']==='error'?'❌':'ℹ️') ?></span>
   <span><?= clean($flash['msg']) ?></span>
-  <button onclick="this.parentElement.remove()" style="border:none;background:none;color:var(--ts);cursor:pointer;margin-left:.5rem;font-size:1rem;">×</button>
+  <button onclick="this.parentElement.remove()" style="border:none;background:none;color:#0f172a !important;cursor:pointer;margin-left:.5rem;font-size:1rem;">×</button>
 </div>
 <style>@keyframes slideIn{from{transform:translateX(120%)}to{transform:translateX(0)}}</style>
 <script>setTimeout(()=>{const f=document.getElementById('flash-msg');if(f)f.remove();},4000);</script>
