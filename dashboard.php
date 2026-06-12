@@ -1,172 +1,161 @@
 <?php
-// admin/dashboard.php
+// student/dashboard.php
 require_once __DIR__ . '/../config/db.php';
-require_admin();
+require_student();
 
-// Dashboard stats via view
-$stats = db_row($conn, "SELECT * FROM v_dashboard_stats");
+$sid = (int)$_SESSION['student_id'];
 
-// Recent applications
-$recent_apps = db_query($conn,
-    "SELECT a.*, s.full_name, s.student_id AS sid, s.department
-     FROM applications a JOIN students s ON s.id=a.student_id
-     ORDER BY a.created_at DESC LIMIT 8");
+// Fetch student details
+$student = db_row($conn, "SELECT * FROM students WHERE id=?", 'i', $sid);
 
-// Open complaints
-$open_comps = db_query($conn,
-    "SELECT c.*, s.full_name, r.room_number FROM complaints c
-     JOIN students s ON s.id=c.student_id
-     LEFT JOIN rooms r ON r.id=c.room_id
-     WHERE c.status IN ('open','in_progress')
-     ORDER BY c.created_at DESC LIMIT 5");
+// Fetch latest application
+$app = db_row($conn,
+    "SELECT * FROM applications WHERE student_id=? ORDER BY created_at DESC LIMIT 1", 'i', $sid);
 
-// Block occupancy
-$block_occ = db_query($conn,
-    "SELECT block, SUM(capacity) AS cap, SUM(occupied) AS occ,
-            ROUND(SUM(occupied)/SUM(capacity)*100,1) AS pct
-     FROM rooms WHERE status='available' GROUP BY block ORDER BY block");
+// Fetch active allocation + room
+$alloc = db_row($conn,
+    "SELECT al.*, r.room_number, r.block, r.floor, r.room_type, r.fee_per_sem,
+            r.has_ac, r.has_wifi, r.has_attached_bath
+     FROM allocations al JOIN rooms r ON r.id=al.room_id
+     WHERE al.student_id=? AND al.status='active' LIMIT 1", 'i', $sid);
 
-// Fee summary
-$fee_stats = db_row($conn,
-    "SELECT COALESCE(SUM(amount),0) AS expected,
-            COALESCE(SUM(CASE WHEN status='paid' THEN amount ELSE 0 END),0) AS collected,
-            COALESCE(SUM(CASE WHEN status IN ('pending','overdue') THEN amount ELSE 0 END),0) AS outstanding
-     FROM payments");
+// Fetch pending payment
+$payment = db_row($conn,
+    "SELECT * FROM payments WHERE student_id=? AND status IN ('pending','overdue')
+     ORDER BY due_date ASC LIMIT 1", 'i', $sid);
 
-$page_title = 'Admin Dashboard';
+// Fetch open complaints count
+$comp_row = db_row($conn,
+    "SELECT COUNT(*) AS cnt FROM complaints WHERE student_id=? AND status IN ('open','in_progress')", 'i', $sid);
+$open_complaints = $comp_row['cnt'] ?? 0;
+
+// Notices
+$notices = db_query($conn, "SELECT * FROM notices WHERE is_active=1 ORDER BY created_at DESC LIMIT 4");
+
+$page_title = 'My Dashboard';
 require_once __DIR__ . '/../includes/header.php';
 ?>
+
 <nav class="navbar">
-  <a class="nav-logo" href="<?= APP_URL ?>">UniNest Admin</a>
+  <a class="nav-logo" href="<?= APP_URL ?>">UniNest</a>
   <div class="nav-links">
-    <span style="font-size:.82rem;color:var(--ts);">👤 <?= clean($_SESSION['admin_name']) ?></span>
+    <a class="nav-link" href="<?= APP_URL ?>/student/rooms.php">Browse Rooms</a>
     <a class="nav-link" href="<?= APP_URL ?>/auth/logout.php">Logout</a>
   </div>
 </nav>
 
 <div class="sidebar-layout">
-  <?php require_once __DIR__ . '/../includes/admin_sidebar.php'; ?>
+  <?php require_once __DIR__ . '/../includes/student_sidebar.php'; ?>
 
   <main class="dash-main">
-    <div class="page-title">Admin Dashboard</div>
-    <div class="page-sub">System overview — <?= date('F Y') ?></div>
+    <div class="page-title">Welcome back, <?= clean(explode(' ',$student['full_name'])[0]) ?> 👋</div>
+    <div class="page-sub">Here's a snapshot of your hostel status</div>
 
     <!-- STAT CARDS -->
     <div class="g4" style="margin-bottom:1.4rem;">
       <div class="stat-card blue">
-        <div style="font-size:1.4rem;margin-bottom:.3rem;">🏠</div>
-        <div class="stat-val"><?= $stats['total_rooms'] ?></div>
-        <div class="stat-label">Total Rooms</div>
+        <div style="font-size:1.5rem;margin-bottom:.3rem;">📋</div>
+        <div class="stat-val"><?= $app ? 1 : 0 ?></div>
+        <div class="stat-label">Application<?= $app ? '' : ' (none)' ?></div>
       </div>
       <div class="stat-card purple">
-        <div style="font-size:1.4rem;margin-bottom:.3rem;">👥</div>
-        <div class="stat-val"><?= $stats['housed_students'] ?></div>
-        <div class="stat-label">Students Housed</div>
+        <div style="font-size:1.5rem;margin-bottom:.3rem;">🏠</div>
+        <div class="stat-val"><?= $alloc ? $alloc['room_number'] : '—' ?></div>
+        <div class="stat-label">Assigned Room</div>
       </div>
       <div class="stat-card cyan">
-        <div style="font-size:1.4rem;margin-bottom:.3rem;">📋</div>
-        <div class="stat-val"><?= $stats['pending_apps'] ?></div>
-        <div class="stat-label">Pending Applications</div>
+        <div style="font-size:1.5rem;margin-bottom:.3rem;">💳</div>
+        <div class="stat-val">৳<?= $payment ? number_format($payment['amount'],0) : '0' ?></div>
+        <div class="stat-label">Balance Due</div>
       </div>
       <div class="stat-card green">
-        <div style="font-size:1.4rem;margin-bottom:.3rem;">💰</div>
-        <div class="stat-val">৳<?= number_format($stats['fees_collected']/1000,0) ?>K</div>
-        <div class="stat-label">Fees Collected</div>
+        <div style="font-size:1.5rem;margin-bottom:.3rem;">📣</div>
+        <div class="stat-val"><?= $open_complaints ?></div>
+        <div class="stat-label">Open Complaints</div>
       </div>
     </div>
 
-    <div class="g2" style="margin-bottom:1.2rem;">
-      <!-- RECENT APPLICATIONS -->
-      <div class="table-wrapper">
-        <div class="table-header">
-          <div class="table-title">Recent Applications</div>
-          <a class="btn btn-secondary btn-sm" href="applications.php">View All →</a>
-        </div>
-        <table class="data-table">
-          <thead><tr><th>Student</th><th>Type</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody>
-            <?php foreach(array_slice($recent_apps,0,5) as $a): ?>
-            <tr>
-              <td>
-                <div style="display:flex;align-items:center;gap:.5rem;">
-                  <div class="avatar" style="width:28px;height:28px;font-size:.65rem;"><?= strtoupper(substr($a['full_name'],0,1).substr(explode(' ',$a['full_name'])[1]??'',0,1)) ?></div>
-                  <div>
-                    <div style="font-size:.85rem;font-weight:600;"><?= clean($a['full_name']) ?></div>
-                    <div style="font-size:.73rem;color:var(--ts);"><?= clean($a['sid']) ?></div>
+    <div class="g21">
+      <div>
+        <!-- APPLICATION STATUS TRACKER -->
+        <div class="table-wrapper" style="margin-bottom:1.2rem;">
+          <div class="table-header">
+            <div class="table-title">Application Status</div>
+            <?php if($app): ?>
+              <span class="badge badge-<?= $app['status'] ?>"><?= ucfirst($app['status']) ?></span>
+            <?php else: ?>
+              <a class="btn btn-primary btn-sm" href="apply.php">Apply Now</a>
+            <?php endif; ?>
+          </div>
+          <div style="padding:1.25rem;">
+            <?php if(!$app): ?>
+              <div class="info-box">You have not submitted an application yet. <a href="apply.php" style="color:var(--blue);font-weight:600;">Apply for a room →</a></div>
+            <?php else:
+              $steps = [
+                ['label'=>'Application Submitted','done'=>true,'date'=>date('M d, Y H:i', strtotime($app['created_at']))],
+                ['label'=>'Admin Review',          'done'=>in_array($app['status'],['approved','rejected','allocated']),'date'=>$app['reviewed_at']?date('M d, Y',strtotime($app['reviewed_at'])):'In progress…'],
+                ['label'=>'Room Allocation',       'done'=>in_array($app['status'],['allocated']),'date'=>$alloc?date('M d, Y',strtotime($alloc['start_date'])):'Awaiting approval'],
+                ['label'=>'Confirmation & Payment','done'=>$payment&&$payment['status']==='paid','date'=>'Final step'],
+              ];
+              foreach($steps as $i=>$step):
+                $active = !$step['done'] && ($i===0 || $steps[$i-1]['done']); ?>
+                <div style="display:flex;align-items:flex-start;gap:.75rem;margin-bottom:.5rem;">
+                  <div style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;flex-shrink:0;
+                    <?= $step['done'] ? 'background:linear-gradient(135deg,#63b3ed,#b794f4);color:#fff;' : ($active?'border:2px solid var(--warning);color:var(--warning);background:rgba(246,224,94,.1);':'border:1px solid var(--gb);color:var(--tm);') ?>">
+                    <?= $step['done'] ? '✓' : ($active ? '⋯' : ($i+1)) ?>
+                  </div>
+                  <div style="<?= !$step['done']&&!$active?'opacity:.45':'' ?>">
+                    <div style="font-size:.875rem;font-weight:600;"><?= $step['label'] ?></div>
+                    <div style="font-size:.75rem;color:var(--ts);"><?= $step['date'] ?></div>
                   </div>
                 </div>
-              </td>
-              <td><span class="tag tag-blue"><?= ucfirst($a['preferred_type']) ?></span></td>
-              <td><span class="badge badge-<?= $a['status'] ?>"><?= ucfirst($a['status']) ?></span></td>
-              <td>
-                <?php if($a['status']==='pending'): ?>
-                <div style="display:flex;gap:4px;">
-                  <a class="btn btn-success btn-sm" href="applications.php?action=approve&id=<?= $a['id'] ?>">✓</a>
-                  <a class="btn btn-danger btn-sm"  href="applications.php?action=reject&id=<?= $a['id'] ?>">✗</a>
-                </div>
-                <?php elseif($a['status']==='approved'): ?>
-                  <a class="btn btn-secondary btn-sm" href="allocations.php?app_id=<?= $a['id'] ?>">Allocate</a>
-                <?php else: ?>
-                  <span style="font-size:.75rem;color:var(--tm);"><?= ucfirst($a['status']) ?></span>
-                <?php endif; ?>
-              </td>
-            </tr>
-            <?php endforeach; ?>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- BLOCK OCCUPANCY -->
-      <div class="glass" style="padding:1.2rem;">
-        <div class="table-title" style="margin-bottom:.9rem;">Block Occupancy</div>
-        <?php foreach($block_occ as $b): ?>
-        <div style="margin-bottom:1rem;">
-          <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.35rem;">
-            <span>Block <?= $b['block'] ?></span>
-            <span style="color:var(--blue);font-family:var(--fm);"><?= $b['pct'] ?>%</span>
+                <?php if($i<3): ?><div style="margin-left:14px;width:1px;height:20px;background:<?= $step['done']?'linear-gradient(180deg,var(--blue),transparent)':'var(--gb)' ?>;margin-bottom:.5rem;"></div><?php endif; ?>
+              <?php endforeach; ?>
+            <?php endif; ?>
           </div>
-          <div class="progress-bar"><div class="progress-fill" style="width:<?= $b['pct'] ?>%;"></div></div>
-          <div style="font-size:.73rem;color:var(--ts);margin-top:.2rem;"><?= $b['occ'] ?>/<?= $b['cap'] ?> seats</div>
         </div>
-        <?php endforeach; ?>
 
-        <div class="divider"></div>
-        <div class="table-title" style="margin-bottom:.75rem;">Fee Collection</div>
-        <div style="display:flex;flex-direction:column;gap:.4rem;font-size:.85rem;">
-          <div style="display:flex;justify-content:space-between;"><span style="color:var(--ts);">Collected</span><span style="color:var(--success);font-family:var(--fm);">৳<?= number_format($fee_stats['collected'],0) ?></span></div>
-          <div style="display:flex;justify-content:space-between;"><span style="color:var(--ts);">Outstanding</span><span style="color:var(--danger);font-family:var(--fm);">৳<?= number_format($fee_stats['outstanding'],0) ?></span></div>
+        <!-- QUICK ACTIONS -->
+        <div class="glass" style="padding:1.1rem;">
+          <div class="table-title" style="margin-bottom:.9rem;">Quick Actions</div>
+          <div style="display:flex;gap:.65rem;flex-wrap:wrap;">
+            <a class="btn btn-secondary btn-sm" href="apply.php">📋 New Application</a>
+            <a class="btn btn-secondary btn-sm" href="complaints.php">📣 File Complaint</a>
+            <a class="btn btn-secondary btn-sm" href="payments.php">💳 View Payments</a>
+            <a class="btn btn-secondary btn-sm" href="<?= APP_URL ?>/student/rooms.php">🏠 Browse Rooms</a>
+          </div>
         </div>
-        <div class="progress-bar" style="margin-top:.75rem;">
-          <div class="progress-fill" style="width:<?= $fee_stats['expected']>0?round($fee_stats['collected']/$fee_stats['expected']*100):0 ?>%;"></div>
+      </div>
+
+      <!-- SIDEBAR WIDGETS -->
+      <div style="display:flex;flex-direction:column;gap:1rem;">
+        <!-- NOTICES -->
+        <div class="glass" style="padding:1.1rem;">
+          <div class="table-title" style="margin-bottom:.8rem;">Notices 📢</div>
+          <?php if(empty($notices)): ?>
+            <div style="font-size:.83rem;color:var(--ts);">No notices at the moment.</div>
+          <?php else: foreach($notices as $n):
+            $bc = ['info'=>'var(--blue)','warning'=>'var(--warning)','danger'=>'var(--danger)','success'=>'var(--success)'];
+            $col = $bc[$n['type']] ?? 'var(--blue)'; ?>
+            <div style="font-size:.8rem;padding:.5rem;border-left:2px solid <?= $col ?>;background:rgba(255,255,255,.02);border-radius:0 var(--r1) var(--r1) 0;margin-bottom:.5rem;">
+              <strong><?= clean($n['title']) ?></strong><br>
+              <span style="color:var(--ts);"><?= clean(substr($n['body'],0,80)) ?>…</span>
+            </div>
+          <?php endforeach; endif; ?>
         </div>
-        <a class="btn btn-secondary btn-sm" href="payments.php" style="margin-top:.75rem;width:100%;justify-content:center;">Full Fee Report →</a>
+        <!-- ROOM PREFERENCE -->
+        <?php if($app): ?>
+        <div class="glass" style="padding:1.1rem;">
+          <div class="table-title" style="margin-bottom:.75rem;">My Preferences</div>
+          <div style="display:flex;flex-direction:column;gap:.35rem;font-size:.825rem;">
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--ts);">Block:</span><span>Block <?= $app['preferred_block'] ?></span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--ts);">Type:</span><span><?= ucfirst($app['preferred_type']) ?> Room</span></div>
+            <div style="display:flex;justify-content:space-between;"><span style="color:var(--ts);">App ID:</span><code><?= $app['app_code'] ?></code></div>
+          </div>
+        </div>
+        <?php endif; ?>
       </div>
     </div>
-
-    <!-- OPEN COMPLAINTS -->
-    <?php if(!empty($open_comps)): ?>
-    <div class="table-wrapper">
-      <div class="table-header">
-        <div class="table-title">Open Complaints (<?= count($open_comps) ?>)</div>
-        <a class="btn btn-secondary btn-sm" href="complaints.php">Manage All →</a>
-      </div>
-      <table class="data-table">
-        <thead><tr><th>Complaint</th><th>Student</th><th>Room</th><th>Priority</th><th>Status</th><th>Action</th></tr></thead>
-        <tbody>
-          <?php foreach($open_comps as $c): $icons=['maintenance'=>'🔧','plumbing'=>'💧','electricity'=>'💡','internet'=>'📶','cleanliness'=>'🧹','security'=>'🔒','other'=>'📌']; ?>
-          <tr>
-            <td><?= ($icons[$c['category']]??'📌') ?> <?= clean(substr($c['subject'],0,30)) ?></td>
-            <td><?= clean($c['full_name']) ?></td>
-            <td><?= $c['room_number'] ?? 'N/A' ?></td>
-            <td><span class="badge badge-<?= in_array($c['priority'],['urgent','high'])?'rejected':($c['priority']==='low'?'available':'pending') ?>"><?= ucfirst($c['priority']) ?></span></td>
-            <td><span class="badge badge-<?= str_replace('_','',$c['status']) ?>"><?= ucfirst(str_replace('_',' ',$c['status'])) ?></span></td>
-            <td><a class="btn btn-success btn-sm" href="complaints.php?action=resolve&id=<?= $c['id'] ?>">✓ Resolve</a></td>
-          </tr>
-          <?php endforeach; ?>
-        </tbody>
-      </table>
-    </div>
-    <?php endif; ?>
   </main>
 </div>
 </body></html>
