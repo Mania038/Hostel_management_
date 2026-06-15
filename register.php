@@ -70,7 +70,7 @@ require_once __DIR__ . '/../includes/header.php';
 .orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;}
 .orb1{width:300px;height:300px;background:rgba(183,148,244,.07);top:5%;right:5%;}
 .orb2{width:250px;height:250px;background:rgba(99,179,237,.06);bottom:5%;left:5%;}
-.auth-card{width:100%;max-width:600px;background:rgba(9,13,26,.92);border:1px solid var(--gb);border-radius:24px;padding:2.2rem;backdrop-filter:blur(20px);}
+.auth-card{width:100%;max-width:600px;background:rgba(243, 243, 243, 0.92);border:1px solid var(--gb);border-radius:24px;padding:2.2rem;backdrop-filter:blur(20px);}
 </style>
 
 <nav class="navbar">
