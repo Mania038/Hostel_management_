@@ -25,10 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         // Demo: accept "Admin@123" OR check bcrypt (XAMPP sample password = "password")
         if ($admin && (password_verify($password, $admin['password']) || $password === 'Admin@123')) {
-            $_SESSION['admin_id']   = $admin['id'];
-            $_SESSION['admin_name'] = $admin['full_name'];
-            $_SESSION['admin_role'] = $admin['role'];
-            $_SESSION['last_active']= time();
+             $_SESSION['admin_id']       = $admin['id'];
+            $_SESSION['admin_name']     = $admin['full_name'];
+            $_SESSION['admin_role']     = $admin['role'];
+            $_SESSION['manager_level']  = $admin['manager_level'] ?? 'super';
+            $_SESSION['assigned_block'] = $admin['assigned_block'] ?? null;
+            $_SESSION['last_active']    = time();
             flash('success', 'Welcome back, ' . $admin['full_name'] . '!');
             redirect(APP_URL . '/admin/dashboard.php');
         } else {
@@ -57,12 +59,13 @@ require_once __DIR__ . '/../includes/header.php';
 ?>
 
 <style>
+body{background:rgba(240,241,245,.9);}
 .auth-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:2rem;position:relative;overflow:hidden;}
 .orb{position:absolute;border-radius:50%;filter:blur(80px);pointer-events:none;}
 .orb1{width:300px;height:300px;background:rgba(99,179,237,.06);top:10%;left:10%;animation:orbf 8s ease-in-out infinite;}
 .orb2{width:250px;height:250px;background:rgba(183,148,244,.07);bottom:10%;right:10%;animation:orbf 8s ease-in-out infinite 3s;}
 @keyframes orbf{0%,100%{transform:translateY(0)}50%{transform:translateY(-20px)}}
-.auth-card{width:100%;max-width:430px;background:rgba(9,13,26,.92);border:1px solid var(--gb);border-radius:24px;padding:2.2rem;backdrop-filter:blur(20px);}
+.auth-card{width:100%;max-width:430px;background:rgba(246, 247, 251, 0.92);border:1px solid var(--gb);border-radius:24px;padding:2.2rem;backdrop-filter:blur(20px);}
 .auth-logo{text-align:center;margin-bottom:1.6rem;}
 .auth-logo-txt{font-family:var(--fd);font-size:1.55rem;font-weight:800;background:var(--ag);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .auth-tabs{display:flex;gap:0;margin-bottom:1.6rem;border-radius:var(--r1);overflow:hidden;background:rgba(255,255,255,.04);padding:3px;}
